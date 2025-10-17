@@ -8,4 +8,9 @@
 /dataSources.local.xml
 .env
 /report_advanced_web.pdf
+node_modules/
+dist/
+*.log
+.DS_Store
+
 
