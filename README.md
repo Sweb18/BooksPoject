@@ -31,4 +31,5 @@ Features :
 *Authentication and user roles (admin, reader)
 
 This project was created as part of the Advanced Web Programming course.
+
 Authors: Souhaib, Max, and Renaud
