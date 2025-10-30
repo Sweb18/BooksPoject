@@ -2,6 +2,7 @@
   {
     "book_id": 1,
     "title": "Harry Potter and the Chamber of Secrets",
+    "author": "J.K. Rowling",
     "subtitle": null,
     "isbn13": "9780439064873",
     "author_id": 1,
@@ -14,6 +15,7 @@
   {
     "book_id": 2,
     "title": "1984",
+    "author": "George Orwell",
     "subtitle": null,
     "isbn13": "9780451524935",
     "author_id": 2,
@@ -26,6 +28,7 @@
   {
     "book_id": 3,
     "title": "Les Misérables",
+    "author": "Victor Hugo",
     "subtitle": null,
     "isbn13": "9782070409189",
     "author_id": 3,
@@ -38,6 +41,7 @@
   {
     "book_id": 4,
     "title": "Pride and Prejudice",
+    "author": "Jane Austen",
     "subtitle": null,
     "isbn13": "9780141439518",
     "author_id": 4,
@@ -50,6 +54,7 @@
   {
     "book_id": 5,
     "title": "Adventures of Huckleberry Finn",
+    "author": "Mark Twain",
     "subtitle": null,
     "isbn13": "9780486280615",
     "author_id": 5,
@@ -62,6 +67,7 @@
   {
     "book_id": 6,
     "title": "Murder on the Orient Express",
+    "author": "Agatha Christie",
     "subtitle": null,
     "isbn13": "9780062693662",
     "author_id": 6,
@@ -74,6 +80,7 @@
   {
     "book_id": 7,
     "title": "The Old Man and the Sea",
+    "author": "Ernest Hemingway",
     "subtitle": null,
     "isbn13": "9780684801223",
     "author_id": 7,
@@ -86,6 +93,7 @@
   {
     "book_id": 8,
     "title": "One Hundred Years of Solitude",
+    "author": "Garcia Marquez",
     "subtitle": null,
     "isbn13": "9780060883287",
     "author_id": 8,
@@ -98,6 +106,7 @@
   {
     "book_id": 9,
     "title": "Kafka on the Shore",
+    "author": "Haruki Murakami",
     "subtitle": null,
     "isbn13": "9781400079278",
     "author_id": 9,
@@ -110,6 +119,7 @@
   {
     "book_id": 10,
     "title": "The Shining",
+    "author": "Stephen King",
     "subtitle": null,
     "isbn13": "9780307743657",
     "author_id": 10,
@@ -120,3 +130,5 @@
     "description": "Horror novel by Stephen King."
   }
 ]
+
+
