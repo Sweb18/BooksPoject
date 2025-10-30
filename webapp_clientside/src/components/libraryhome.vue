@@ -139,6 +139,8 @@
   </div>
 </template>
 
+
+
 <script>
 import logoImg from '../assets/img/logo.png';
 import shopImg from '../assets/img/store.png';
