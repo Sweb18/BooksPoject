@@ -1,0 +1,29 @@
+[
+  {
+    "review_id": 1,
+    "user_id": 1,
+    "book_id": 2,
+    "rating": 5,
+    "title": "Great!",
+    "body": "Loved it.",
+    "created_at": "2025-10-30T23:10:00"
+  },
+  {
+    "review_id": 2,
+    "user_id": 2,
+    "book_id": 3,
+    "rating": 4,
+    "title": "Classic",
+    "body": "A must-read.",
+    "created_at": "2025-10-30T23:10:00"
+  },
+  {
+    "review_id": 3,
+    "user_id": 3,
+    "book_id": 10,
+    "rating": 5,
+    "title": "Brilliant",
+    "body": "Could not put it down.",
+    "created_at": "2025-10-30T23:10:00"
+  }
+]

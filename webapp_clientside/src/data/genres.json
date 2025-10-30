@@ -1,0 +1,14 @@
+[
+  {
+    "genre_id": 1,
+    "name": "Fantasy"
+  },
+  {
+    "genre_id": 2,
+    "name": "Science Fiction"
+  },
+  {
+    "genre_id": 3,
+    "name": "Classic"
+  }
+]

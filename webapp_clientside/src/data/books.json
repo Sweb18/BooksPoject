@@ -1,0 +1,122 @@
+[
+  {
+    "book_id": 1,
+    "title": "Harry Potter and the Chamber of Secrets",
+    "subtitle": null,
+    "isbn13": "9780439064873",
+    "author_id": 1,
+    "publisher_id": 1,
+    "publication_date": "1998-07-02",
+    "language": "en",
+    "page_count": 341,
+    "description": "Second book in the Harry Potter series."
+  },
+  {
+    "book_id": 2,
+    "title": "1984",
+    "subtitle": null,
+    "isbn13": "9780451524935",
+    "author_id": 2,
+    "publisher_id": 2,
+    "publication_date": "1949-06-08",
+    "language": "en",
+    "page_count": 328,
+    "description": "Dystopian social science fiction novel."
+  },
+  {
+    "book_id": 3,
+    "title": "Les Misérables",
+    "subtitle": null,
+    "isbn13": "9782070409189",
+    "author_id": 3,
+    "publisher_id": 3,
+    "publication_date": "1862-01-01",
+    "language": "fr",
+    "page_count": 1463,
+    "description": "Classic French novel by Victor Hugo."
+  },
+  {
+    "book_id": 4,
+    "title": "Pride and Prejudice",
+    "subtitle": null,
+    "isbn13": "9780141439518",
+    "author_id": 4,
+    "publisher_id": 4,
+    "publication_date": "1813-01-28",
+    "language": "en",
+    "page_count": 432,
+    "description": "A romantic novel by Jane Austen."
+  },
+  {
+    "book_id": 5,
+    "title": "Adventures of Huckleberry Finn",
+    "subtitle": null,
+    "isbn13": "9780486280615",
+    "author_id": 5,
+    "publisher_id": 5,
+    "publication_date": "1884-12-10",
+    "language": "en",
+    "page_count": 366,
+    "description": "A classic novel by Mark Twain."
+  },
+  {
+    "book_id": 6,
+    "title": "Murder on the Orient Express",
+    "subtitle": null,
+    "isbn13": "9780062693662",
+    "author_id": 6,
+    "publisher_id": 5,
+    "publication_date": "1934-01-01",
+    "language": "en",
+    "page_count": 288,
+    "description": "Detective novel by Agatha Christie."
+  },
+  {
+    "book_id": 7,
+    "title": "The Old Man and the Sea",
+    "subtitle": null,
+    "isbn13": "9780684801223",
+    "author_id": 7,
+    "publisher_id": 8,
+    "publication_date": "1952-09-01",
+    "language": "en",
+    "page_count": 127,
+    "description": "Short novel by Ernest Hemingway."
+  },
+  {
+    "book_id": 8,
+    "title": "One Hundred Years of Solitude",
+    "subtitle": null,
+    "isbn13": "9780060883287",
+    "author_id": 8,
+    "publisher_id": 5,
+    "publication_date": "1967-05-30",
+    "language": "es",
+    "page_count": 417,
+    "description": "Novel by Gabriel García Márquez."
+  },
+  {
+    "book_id": 9,
+    "title": "Kafka on the Shore",
+    "subtitle": null,
+    "isbn13": "9781400079278",
+    "author_id": 9,
+    "publisher_id": 6,
+    "publication_date": "2002-09-12",
+    "language": "jp",
+    "page_count": 505,
+    "description": "Novel by Haruki Murakami."
+  },
+  {
+    "book_id": 10,
+    "title": "The Shining",
+    "subtitle": null,
+    "isbn13": "9780307743657",
+    "author_id": 10,
+    "publisher_id": 6,
+    "publication_date": "1977-01-28",
+    "language": "en",
+    "page_count": 447,
+    "description": "Horror novel by Stephen King."
+  }
+]

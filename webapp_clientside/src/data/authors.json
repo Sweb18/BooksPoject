@@ -1,0 +1,112 @@
+[
+  {
+    "author_id": 1,
+    "first_name": "J.K.",
+    "last_name": "Rowling",
+    "bio": "British author of the Harry Potter series.",
+    "birth_date": "1965-07-31",
+    "death_date": null,
+    "nationality": "British",
+    "website": "https://www.jkrowling.com",
+    "portrait_url": "https://example.com/portraits/rowling.jpg"
+  },
+  {
+    "author_id": 2,
+    "first_name": "George",
+    "last_name": "Orwell",
+    "bio": "English novelist, essayist, journalist and critic.",
+    "birth_date": "1903-06-25",
+    "death_date": "1950-01-21",
+    "nationality": "British",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 3,
+    "first_name": "Victor",
+    "last_name": "Hugo",
+    "bio": "French poet, novelist, and dramatist of the Romantic movement.",
+    "birth_date": "1802-02-26",
+    "death_date": "1885-05-22",
+    "nationality": "French",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 4,
+    "first_name": "Jane",
+    "last_name": "Austen",
+    "bio": "English novelist known primarily for her six major novels.",
+    "birth_date": "1775-12-16",
+    "death_date": "1817-07-18",
+    "nationality": "British",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 5,
+    "first_name": "Mark",
+    "last_name": "Twain",
+    "bio": "American writer, humorist, entrepreneur, publisher, and lecturer.",
+    "birth_date": "1835-11-30",
+    "death_date": "1910-04-21",
+    "nationality": "American",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 6,
+    "first_name": "Agatha",
+    "last_name": "Christie",
+    "bio": "English writer known for her sixty-six detective novels.",
+    "birth_date": "1890-09-15",
+    "death_date": "1976-01-12",
+    "nationality": "British",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 7,
+    "first_name": "Ernest",
+    "last_name": "Hemingway",
+    "bio": "American novelist, short-story writer, and journalist.",
+    "birth_date": "1899-07-21",
+    "death_date": "1961-07-02",
+    "nationality": "American",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 8,
+    "first_name": "Gabriel García",
+    "last_name": "Márquez",
+    "bio": "Colombian novelist, short-story writer, and journalist.",
+    "birth_date": "1927-03-06",
+    "death_date": "2014-04-17",
+    "nationality": "Colombian",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 9,
+    "first_name": "Haruki",
+    "last_name": "Murakami",
+    "bio": "Japanese writer known for his surrealistic fiction.",
+    "birth_date": "1949-01-12",
+    "death_date": null,
+    "nationality": "Japanese",
+    "website": null,
+    "portrait_url": null
+  },
+  {
+    "author_id": 10,
+    "first_name": "Stephen",
+    "last_name": "King",
+    "bio": "American author of horror, supernatural fiction, suspense, crime, and fantasy novels.",
+    "birth_date": "1947-09-21",
+    "death_date": null,
+    "nationality": "American",
+    "website": null,
+    "portrait_url": null
+  }
+]

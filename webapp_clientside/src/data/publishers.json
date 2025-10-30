@@ -1,0 +1,102 @@
+[
+  {
+    "publisher_id": 1,
+    "name": "Bloomsbury",
+    "country": "United Kingdom",
+    "founded_year": 1986,
+    "headquarters_city": "London",
+    "website": "https://www.bloomsbury.com",
+    "contact_email": "info@bloomsbury.com",
+    "phone": "+44 20 7000 0000"
+  },
+  {
+    "publisher_id": 2,
+    "name": "Secker & Warburg",
+    "country": "United Kingdom",
+    "founded_year": 1935,
+    "headquarters_city": "London",
+    "website": null,
+    "contact_email": null,
+    "phone": null
+  },
+  {
+    "publisher_id": 3,
+    "name": "Gallimard",
+    "country": "France",
+    "founded_year": 1911,
+    "headquarters_city": "Paris",
+    "website": "https://www.gallimard.fr",
+    "contact_email": "contact@gallimard.fr",
+    "phone": "+33 1 0000 0000"
+  },
+  {
+    "publisher_id": 4,
+    "name": "Penguin Books",
+    "country": "United Kingdom",
+    "founded_year": 1935,
+    "headquarters_city": "London",
+    "website": "https://www.penguin.co.uk",
+    "contact_email": "hello@penguin.co.uk",
+    "phone": "+44 20 0000 0000"
+  },
+  {
+    "publisher_id": 5,
+    "name": "HarperCollins",
+    "country": "United States",
+    "founded_year": 1989,
+    "headquarters_city": "New York",
+    "website": "https://www.harpercollins.com",
+    "contact_email": "info@harpercollins.com",
+    "phone": "+1 212 000 0000"
+  },
+  {
+    "publisher_id": 6,
+    "name": "Random House",
+    "country": "United States",
+    "founded_year": 1927,
+    "headquarters_city": "New York",
+    "website": "https://www.randomhousebooks.com",
+    "contact_email": null,
+    "phone": null
+  },
+  {
+    "publisher_id": 7,
+    "name": "Hachette",
+    "country": "France",
+    "founded_year": 1826,
+    "headquarters_city": "Paris",
+    "website": "https://www.hachette.com",
+    "contact_email": null,
+    "phone": null
+  },
+  {
+    "publisher_id": 8,
+    "name": "Simon & Schuster",
+    "country": "United States",
+    "founded_year": 1924,
+    "headquarters_city": "New York",
+    "website": "https://www.simonandschuster.com",
+    "contact_email": null,
+    "phone": null
+  },
+  {
+    "publisher_id": 9,
+    "name": "Macmillan",
+    "country": "United Kingdom",
+    "founded_year": 1843,
+    "headquarters_city": "London",
+    "website": "https://www.macmillan.com",
+    "contact_email": null,
+    "phone": null
+  },
+  {
+    "publisher_id": 10,
+    "name": "Faber & Faber",
+    "country": "United Kingdom",
+    "founded_year": 1929,
+    "headquarters_city": "London",
+    "website": "https://www.faber.co.uk",
+    "contact_email": null,
+    "phone": null
+  }
+]
