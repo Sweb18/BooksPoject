@@ -322,9 +322,11 @@ import logoImg from '../assets/img/icons/logo.png';
 import shopImg from '../assets/img/icons/store.png';
 import basket from '../assets/img/icons/basket.png';
 import books from '../data/books.json';
-import fictionImg from '../assets/img/categories/fiction.jpeg';
+import fictionImg from '../assets/img/categories/fiction.png';
+import scienceFictionImg from '../assets/img/categories/scicence-fiction.jpeg';
 import mysteryImg from '../assets/img/categories/mystery.jpeg';
 import horrorImg from '../assets/img/categories/horror.jpeg';
+import fantasyImg from '../assets/img/categories/fantasy.jpeg';
 import classicImg from '../assets/img/categories/classic.jpeg';
 import chamberOfSecrets from '../assets/img/books/chamber_of_secrets.jpg';
 import book1984 from '../assets/img/books/1984.jpg';
@@ -366,8 +368,8 @@ export default {
         'Mystery': mysteryImg,
         'Horror': horrorImg,
         'Classic': classicImg,
-        'Fantasy': fictionImg,
-        'Science Fiction': fictionImg
+        'Fantasy': fantasyImg,
+        'Science Fiction': scienceFictionImg
       }
     };
   },
