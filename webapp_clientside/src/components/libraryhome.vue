@@ -17,7 +17,7 @@
             <p>Shop near you !</p>
           </div>
           <div class="save">
-            <img class="save-logo" src="../assets/img/save.png" alt="Save for later" />
+            <img class="save-logo" src="../assets/img/icons/save.png" alt="Save for later" />
             <p>Save for later</p>
           </div>
           <div class="basket">
@@ -37,7 +37,7 @@
       <div class="dropdown">
         <button class="nav-link">Categories <i class="fas fa-chevron-down"></i></button>
         <div class="dropdown-content">
-          <a v-for="category in categories" :key="category" :href="'#' + category">{{ category }}</a>
+          <a v-for="genre in featuredCategories" :key="genre.name" :href="'#' + genre.name">{{ genre.name }}</a>
         </div>
       </div>
       <router-link to="/contact" class="nav-link">Contact</router-link>
@@ -57,10 +57,25 @@
     <section class="featured">
       <div class="container">
         <div class="featured-grid">
-          <div class="featured-item" v-for="item in featuredItems" :key="item.title">
-            <i :class="item.icon"></i>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.description }}</p>
+          <div class="featured-item">
+            <i class="fas fa-truck"></i>
+            <h3>Free Shipping</h3>
+            <p>On orders over $35</p>
+          </div>
+          <div class="featured-item">
+            <i class="fas fa-undo"></i>
+            <h3>Free Returns</h3>
+            <p>30-day money back guarantee</p>
+          </div>
+          <div class="featured-item">
+            <i class="fas fa-headset"></i>
+            <h3>24/7 Support</h3>
+            <p>Dedicated customer service</p>
+          </div>
+          <div class="featured-item">
+            <i class="fas fa-lock"></i>
+            <h3>Secure Payment</h3>
+            <p>Your information is protected</p>
           </div>
         </div>
       </div>
@@ -73,7 +88,7 @@
           <div class="book-image">
             <img :src="book.img" :alt="book.title" />
             <div class="book-overlay">
-              <button class="quick-view">Quick View</button>
+              <button class="quick-view" @click="openQuickView(book.id)">Quick View</button>
             </div>
           </div>
           <div class="book-info">
@@ -99,11 +114,108 @@
           <div class="category-image" :style="{ backgroundImage: `url('${category.image}')` }"></div>
           <div class="category-content">
             <h3>{{ category.name }}</h3>
-            <p>{{ category.count }} books</p>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Sidebar pour les détails du livre -->
+    <div class="sidebar-overlay" :class="{ active: showSidebar }" @click="closeSidebar"></div>
+    <div class="sidebar" :class="{ active: showSidebar }">
+      <div v-if="selectedBook" class="sidebar-content">
+        <button class="close-sidebar" @click="closeSidebar">
+          <i class="fas fa-times"></i>
+        </button>
+
+        <div class="sidebar-header">
+          <img :src="selectedBook.img" :alt="selectedBook.title" class="sidebar-book-img" />
+        </div>
+
+        <div class="sidebar-body">
+          <h2 class="sidebar-title">{{ selectedBook.title }}</h2>
+          <p class="sidebar-author">by {{ selectedBook.authorName }}</p>
+
+          <div class="sidebar-rating">
+            <div class="stars">
+              <i v-for="n in 5" :key="n" class="fas fa-star" :class="{ filled: n <= Math.round(selectedBook.avgRating) }"></i>
+            </div>
+            <span class="rating-value">{{ selectedBook.avgRating }}/5</span>
+          </div>
+
+          <div class="sidebar-price">
+            <span class="price-label">Price:</span>
+            <span class="price-value">{{ selectedBook.price }}</span>
+          </div>
+
+          <button class="sidebar-add-cart" @click="addToCart">
+            <i class="fas fa-shopping-cart"></i> Add to Cart
+          </button>
+
+          <div class="sidebar-section">
+            <h3>Description</h3>
+            <p>{{ selectedBook.description || 'No description available.' }}</p>
+          </div>
+
+          <div class="sidebar-section" v-if="selectedBook.genres && selectedBook.genres.length > 0">
+            <h3>Genres</h3>
+            <div class="genre-tags">
+              <span v-for="genre in selectedBook.genres" :key="genre" class="genre-tag">{{ genre }}</span>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Details</h3>
+            <div class="book-details-list">
+              <div class="detail-item">
+                <span class="detail-label">ISBN:</span>
+                <span class="detail-value">{{ selectedBook.isbn13 }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Publisher:</span>
+                <span class="detail-value">{{ selectedBook.publisherName }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Publication Date:</span>
+                <span class="detail-value">{{ new Date(selectedBook.publication_date).toLocaleDateString() }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Pages:</span>
+                <span class="detail-value">{{ selectedBook.page_count }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Language:</span>
+                <span class="detail-value">{{ selectedBook.language.toUpperCase() }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sidebar-section" v-if="selectedBook.authorBio">
+            <h3>About the Author</h3>
+            <p>{{ selectedBook.authorBio }}</p>
+          </div>
+
+          <div class="sidebar-section" v-if="selectedBook.reviews && selectedBook.reviews.length > 0">
+            <h3>Reviews ({{ selectedBook.reviews.length }})</h3>
+            <div class="reviews-list">
+              <div v-for="review in selectedBook.reviews" :key="review.review_id" class="review-item">
+                <div class="review-header">
+                  <div class="review-rating">
+                    <i v-for="n in 5" :key="n" class="fas fa-star" :class="{ filled: n <= review.rating }"></i>
+                  </div>
+                  <span class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</span>
+                </div>
+                <h4 class="review-title">{{ review.title }}</h4>
+                <p class="review-body">{{ review.body }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="sidebar-section" v-else>
+            <h3>Reviews</h3>
+            <p class="no-reviews">No reviews yet. Be the first to review this book!</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <footer class="footer">
       <div class="footer-content container">
@@ -143,26 +255,31 @@
 
 
 <script>
-import logoImg from '../assets/img/logo.png';
-import shopImg from '../assets/img/store.png';
-import basket from '../assets/img/basket.png';
+import logoImg from '../assets/img/icons/logo.png';
+import shopImg from '../assets/img/icons/store.png';
+import basket from '../assets/img/icons/basket.png';
 import books from '../data/books.json';
-// Import des images de catégories
 import fictionImg from '../assets/img/categories/fiction.jpeg';
 import mysteryImg from '../assets/img/categories/mystery.jpeg';
 import horrorImg from '../assets/img/categories/horror.jpeg';
 import classicImg from '../assets/img/categories/classic.jpeg';
+import chamberOfSecrets from '../assets/img/books/chamber_of_secrets.jpg';
+import book1984 from '../assets/img/books/1984.jpg';
+import authors from '../data/authors.json';
+import reviews from '../data/reviews.json';
+import publishers from '../data/publishers.json';
+import genres from '../data/genres.json';
+import bookGenres from '../data/book_genres.json';
 
 const bookCovers = {
   // Harry Potter
-  '9780439064873': 'https://m.media-amazon.com/images/I/51OihdkhSBL._SY445_SX342_.jpg',
+  '9780439064873': chamberOfSecrets,
   // 1984
-  '9780451524935': '../assets/img/books/1984.jpg',
+  '9780451524935': book1984,
   // Les Misérables
   '9782070409189': 'https://m.media-amazon.com/images/I/81s3toEGQgL._SY522_.jpg',
   // Pride and Prejudice
   '9780141439518': 'https://m.media-amazon.com/images/I/71Q1tPupKjL._SY522_.jpg',
-
   // Fallback image pour les livres sans couverture spécifique
   'default': 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80'
 };
@@ -175,64 +292,115 @@ export default {
       shop: shopImg,
       basket: basket,
       searchQuery: '',
-      categories: ['Fiction', 'Mystery', 'Horror', 'Classic', 'Romance', 'Adventure'],
-      featuredItems: [
-        {
-          icon: 'fas fa-truck',
-          title: 'Free Shipping',
-          description: 'On orders over $35'
-        },
-        {
-          icon: 'fas fa-undo',
-          title: 'Free Returns',
-          description: '30-day money back guarantee'
-        },
-        {
-          icon: 'fas fa-shield-alt',
-          title: 'Secure Payment',
-          description: 'Your data is protected'
-        },
-        {
-          icon: 'fas fa-headset',
-          title: '24/7 Support',
-          description: 'Have a question? Contact us'
-        }
-      ],
-      featuredCategories: [
-        {
-          name: "Fiction",
-          count: 1250,
-          image: fictionImg
-        },
-        {
-          name: "Mystery",
-          count: 850,
-          image: mysteryImg
-        },
-        {
-          name: "Horror",
-          count: 720,
-          image: horrorImg
-        },
-        {
-          name: "Classic",
-          count: 530,
-          image: classicImg
-        }
-      ]
+      showSidebar: false,
+      selectedBook: null,
+      genreImages: {
+        'Fiction': fictionImg,
+        'Mystery': mysteryImg,
+        'Horror': horrorImg,
+        'Classic': classicImg,
+        'Fantasy': fictionImg,
+        'Science Fiction': fictionImg
+      }
     };
   },
   computed: {
     formattedBooks() {
-      return books.map(book => ({
-        id: book.book_id,
-        title: book.title,
-        author: book.author,
-        price: `$${(Math.random() * 20 + 15).toFixed(2)}`,
-        rating: (Math.random() * 2 + 3).toFixed(1),
-        img: bookCovers[book.isbn13] || bookCovers.default,
-        description: book.description
-      }));
+      return books.map(book => {
+        const author = authors.find(a => a.author_id === book.author_id);
+        const authorName = author ? `${author.first_name} ${author.last_name}` : book.author;
+
+        // Vérifier si le livre a des avis
+        const bookReviews = reviews.filter(r => r.book_id === book.book_id);
+
+        // Utiliser la moyenne des avis si disponible, sinon la note générée
+        const rating = bookReviews.length > 0
+          ? (bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length).toFixed(1)
+          : this.getBookRating(book.book_id);
+
+        const price = this.getBookPrice(book.book_id);
+
+        return {
+          id: book.book_id,
+          title: book.title,
+          author: authorName,
+          price: price,
+          rating: rating,
+          img: bookCovers[book.isbn13] || bookCovers.default,
+          description: book.description
+        };
+      });
+    },
+    featuredCategories() {
+      return genres.map(genre => {
+        // Compter le nombre de livres pour ce genre
+        const bookCount = bookGenres.filter(bg => bg.genre_id === genre.genre_id).length;
+
+        return {
+          name: genre.name,
+          count: bookCount,
+          image: this.genreImages[genre.name] || fictionImg
+        };
+      });
+    }
+  },
+  methods: {
+    // Générer un prix cohérent basé sur l'ID du livre
+    getBookPrice(bookId) {
+      const seed = bookId * 123.456;
+      const pseudoRandom = (seed * 9301 + 49297) % 233280;
+      const price = 5 + (pseudoRandom / 233280) * 10;
+      return `$${price.toFixed(2)}`;
+    },
+    // Générer une note cohérente basée sur l'ID du livre
+    getBookRating(bookId) {
+      const seed = bookId * 789.012;
+      const pseudoRandom = (seed * 9301 + 49297) % 233280;
+      const rating = 3 + (pseudoRandom / 233280) * 2;
+      return rating.toFixed(1);
+    },
+    openQuickView(bookId) {
+      const book = books.find(b => b.book_id === bookId);
+      if (!book) return;
+
+      const author = authors.find(a => a.author_id === book.author_id);
+      const publisher = publishers.find(p => p.publisher_id === book.publisher_id);
+
+      const bookGenreIds = bookGenres
+        .filter(bg => bg.book_id === book.book_id)
+        .map(bg => bg.genre_id);
+      const bookGenresList = genres
+        .filter(g => bookGenreIds.includes(g.genre_id))
+        .map(g => g.name);
+
+      const bookReviews = reviews.filter(r => r.book_id === book.book_id);
+
+      const avgRating = bookReviews.length > 0
+        ? (bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length).toFixed(1)
+        : this.getBookRating(book.book_id);
+
+      this.selectedBook = {
+        ...book,
+        authorName: author ? `${author.first_name} ${author.last_name}` : book.author,
+        authorBio: author?.bio || '',
+        publisherName: publisher?.name || 'Unknown Publisher',
+        genres: bookGenresList,
+        reviews: bookReviews,
+        avgRating: avgRating,
+        price: this.getBookPrice(book.book_id),
+        img: bookCovers[book.isbn13] || bookCovers.default
+      };
+
+      this.showSidebar = true;
+    },
+    closeSidebar() {
+      this.showSidebar = false;
+      setTimeout(() => {
+        this.selectedBook = null;
+      }, 300);
+    },
+    addToCart() {
+      alert(`Added "${this.selectedBook.title}" to cart!`);
     }
   }
 };
@@ -431,7 +599,7 @@ export default {
 
 .hero {
   background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
-    url('../assets/img/library_home.jpeg') center/cover;
+    url('../assets/img/icons/library_home.jpeg') center/cover;
   color: white;
   padding: 8rem 2rem;
   text-align: center;
@@ -814,4 +982,316 @@ export default {
     flex-direction: column;
   }
 }
+
+/* Sidebar Styles */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -500px;
+  width: 500px;
+  max-width: 90vw;
+  height: 100vh;
+  background: white;
+  z-index: 9999;
+  overflow-y: auto;
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.2);
+  transition: right 0.3s ease;
+}
+
+.sidebar.active {
+  right: 0;
+}
+
+.sidebar-content {
+  padding-bottom: 2rem;
+}
+
+.close-sidebar {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #2c3e50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.close-sidebar:hover {
+  background: #f8f9fa;
+  transform: rotate(90deg);
+}
+
+.sidebar-header {
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-book-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sidebar-body {
+  padding: 2rem;
+}
+
+.sidebar-title {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.sidebar-author {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.sidebar-rating {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.stars {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.stars i {
+  color: #ddd;
+  font-size: 1.2rem;
+}
+
+.stars i.filled {
+  color: #f1c40f;
+}
+
+.rating-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.sidebar-price {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.price-label {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.price-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #016B61;
+}
+
+.sidebar-add-cart {
+  width: 100%;
+  padding: 1.2rem;
+  background: #016B61;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
+
+.sidebar-add-cart:hover {
+  background: #015045;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(1, 107, 97, 0.3);
+}
+
+.sidebar-add-cart i {
+  margin-right: 0.5rem;
+}
+
+.sidebar-section {
+  margin-bottom: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.sidebar-section h3 {
+  font-size: 1.3rem;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.sidebar-section p {
+  color: #666;
+  line-height: 1.8;
+  font-size: 1rem;
+}
+
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.genre-tag {
+  background: rgba(1, 107, 97, 0.1);
+  color: #016B61;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.book-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.detail-value {
+  color: #666;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.review-item {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #016B61;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.review-rating {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.review-rating i {
+  color: #ddd;
+  font-size: 0.9rem;
+}
+
+.review-rating i.filled {
+  color: #f1c40f;
+}
+
+.review-date {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.review-title {
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.review-body {
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.no-reviews {
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Scrollbar personnalisée pour la sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #016B61;
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #015045;
+}
+
 </style>
