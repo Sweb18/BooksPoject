@@ -119,51 +119,52 @@
       </div>
     </section>
 
-    <!-- Sidebar pour les détails du livre -->
-    <div class="sidebar-overlay" :class="{ active: showSidebar }" @click="closeSidebar"></div>
-    <div class="sidebar" :class="{ active: showSidebar }">
-      <div v-if="selectedBook" class="sidebar-content">
-        <button class="close-sidebar" @click="closeSidebar">
+    <!-- Modal pour les détails du livre -->
+    <div class="modal-wrapper" :class="{ active: showWindow }">
+      <div class="window-overlay" @click="closeWindow"></div>
+      <div class="window" @click.stop>
+        <div v-if="selectedBook" class="window-content">
+        <button class="close-window" @click="closeWindow">
           <i class="fas fa-times"></i>
         </button>
 
-        <div class="sidebar-header">
-          <img :src="selectedBook.img" :alt="selectedBook.title" class="sidebar-book-img" />
+        <div class="window-header">
+          <img :src="selectedBook.img" :alt="selectedBook.title" class="window-book-img" />
         </div>
 
-        <div class="sidebar-body">
-          <h2 class="sidebar-title">{{ selectedBook.title }}</h2>
-          <p class="sidebar-author">by {{ selectedBook.authorName }}</p>
+        <div class="window-body">
+          <h2 class="window-title">{{ selectedBook.title }}</h2>
+          <p class="window-author">by {{ selectedBook.authorName }}</p>
 
-          <div class="sidebar-rating">
+          <div class="window-rating">
             <div class="stars">
               <i v-for="n in 5" :key="n" class="fas fa-star" :class="{ filled: n <= Math.round(selectedBook.avgRating) }"></i>
             </div>
             <span class="rating-value">{{ selectedBook.avgRating }}/5</span>
           </div>
 
-          <div class="sidebar-price">
+          <div class="window-price">
             <span class="price-label">Price:</span>
             <span class="price-value">{{ selectedBook.price }}</span>
           </div>
 
-          <button class="sidebar-add-cart" @click="addToCart">
+          <button class="window-add-cart" @click="addToCart">
             <i class="fas fa-shopping-cart"></i> Add to Cart
           </button>
 
-          <div class="sidebar-section">
+          <div class="window-section">
             <h3>Description</h3>
             <p>{{ selectedBook.description || 'No description available.' }}</p>
           </div>
 
-          <div class="sidebar-section" v-if="selectedBook.genres && selectedBook.genres.length > 0">
+          <div class="window-section" v-if="selectedBook.genres && selectedBook.genres.length > 0">
             <h3>Genres</h3>
             <div class="genre-tags">
               <span v-for="genre in selectedBook.genres" :key="genre" class="genre-tag">{{ genre }}</span>
             </div>
           </div>
 
-          <div class="sidebar-section">
+          <div class="window-section">
             <h3>Details</h3>
             <div class="book-details-list">
               <div class="detail-item">
@@ -189,12 +190,12 @@
             </div>
           </div>
 
-          <div class="sidebar-section" v-if="selectedBook.authorBio">
+          <div class="window-section" v-if="selectedBook.authorBio">
             <h3>About the Author</h3>
             <p>{{ selectedBook.authorBio }}</p>
           </div>
 
-          <div class="sidebar-section" v-if="selectedBook.reviews && selectedBook.reviews.length > 0">
+          <div class="window-section" v-if="selectedBook.reviews && selectedBook.reviews.length > 0">
             <h3>Reviews ({{ selectedBook.reviews.length }})</h3>
             <div class="reviews-list">
               <div v-for="review in selectedBook.reviews" :key="review.review_id" class="review-item">
@@ -209,12 +210,13 @@
               </div>
             </div>
           </div>
-          <div class="sidebar-section" v-else>
+          <div class="window-section" v-else>
             <h3>Reviews</h3>
             <p class="no-reviews">No reviews yet. Be the first to review this book!</p>
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <footer class="footer">
@@ -292,7 +294,7 @@ export default {
       shop: shopImg,
       basket: basket,
       searchQuery: '',
-      showSidebar: false,
+      showWindow: false,
       selectedBook: null,
       genreImages: {
         'Fiction': fictionImg,
@@ -391,10 +393,10 @@ export default {
         img: bookCovers[book.isbn13] || bookCovers.default
       };
 
-      this.showSidebar = true;
+      this.showWindow = true;
     },
-    closeSidebar() {
-      this.showSidebar = false;
+    closeWindow() {
+      this.showWindow = false;
       setTimeout(() => {
         this.selectedBook = null;
       }, 300);
@@ -983,55 +985,80 @@ export default {
   }
 }
 
-/* Sidebar Styles */
-.sidebar-overlay {
+/* Modal Window Styles */
+.modal-wrapper {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
   z-index: 9998;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
+  display: none;
+  align-items: center;
+  justify-content: center;
 }
 
-.sidebar-overlay.active {
-  opacity: 1;
-  visibility: visible;
+.modal-wrapper.active {
+  display: flex;
 }
 
-.sidebar {
-  position: fixed;
+.window-overlay {
+  position: absolute;
   top: 0;
-  right: -500px;
-  width: 500px;
-  max-width: 90vw;
-  height: 100vh;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.window {
+  position: relative;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
   background: white;
   z-index: 9999;
   overflow-y: auto;
-  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.2);
-  transition: right 0.3s ease;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+              0 0 100px rgba(1, 107, 97, 0.1);
+  animation: modalSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-.sidebar.active {
-  right: 0;
+@keyframes modalSlideIn {
+  from {
+    transform: scale(0.8) translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
-.sidebar-content {
+.window-content {
   padding-bottom: 2rem;
 }
 
-.close-sidebar {
+.close-window {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: white;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1039,37 +1066,50 @@ export default {
   cursor: pointer;
   font-size: 1.5rem;
   color: #2c3e50;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 10;
   transition: all 0.3s ease;
 }
 
-.close-sidebar:hover {
-  background: #f8f9fa;
-  transform: rotate(90deg);
+.close-window:hover {
+  background: #016B61;
+  color: white;
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 6px 20px rgba(1, 107, 97, 0.3);
 }
 
-.sidebar-header {
+.window-header {
   width: 100%;
-  height: 400px;
+  height: 450px;
   overflow: hidden;
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
-.sidebar-book-img {
+.window-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+.window-book-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.sidebar-body {
+.window-body {
   padding: 2rem;
 }
 
-.sidebar-title {
+.window-title {
   font-size: 2rem;
   color: #2c3e50;
   margin-bottom: 0.5rem;
@@ -1077,14 +1117,14 @@ export default {
   line-height: 1.3;
 }
 
-.sidebar-author {
+.window-author {
   font-size: 1.2rem;
   color: #666;
   margin-bottom: 1.5rem;
   font-style: italic;
 }
 
-.sidebar-rating {
+.window-rating {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -1113,7 +1153,7 @@ export default {
   color: #2c3e50;
 }
 
-.sidebar-price {
+.window-price {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -1131,7 +1171,7 @@ export default {
   color: #016B61;
 }
 
-.sidebar-add-cart {
+.window-add-cart {
   width: 100%;
   padding: 1.2rem;
   background: #016B61;
@@ -1145,35 +1185,35 @@ export default {
   margin-bottom: 2rem;
 }
 
-.sidebar-add-cart:hover {
+.window-add-cart:hover {
   background: #015045;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(1, 107, 97, 0.3);
 }
 
-.sidebar-add-cart i {
+.window-add-cart i {
   margin-right: 0.5rem;
 }
 
-.sidebar-section {
+.window-section {
   margin-bottom: 2rem;
   padding-top: 2rem;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.sidebar-section:first-of-type {
+.window-section:first-of-type {
   border-top: none;
   padding-top: 0;
 }
 
-.sidebar-section h3 {
+.window-section h3 {
   font-size: 1.3rem;
   color: #2c3e50;
   margin-bottom: 1rem;
   font-weight: 600;
 }
 
-.sidebar-section p {
+.window-section p {
   color: #666;
   line-height: 1.8;
   font-size: 1rem;
@@ -1276,21 +1316,21 @@ export default {
   padding: 2rem;
 }
 
-/* Scrollbar personnalisée pour la sidebar */
-.sidebar::-webkit-scrollbar {
+/* Scrollbar personnalisée pour la window */
+.window::-webkit-scrollbar {
   width: 8px;
 }
 
-.sidebar::-webkit-scrollbar-track {
+.window::-webkit-scrollbar-track {
   background: #f1f1f1;
 }
 
-.sidebar::-webkit-scrollbar-thumb {
+.window::-webkit-scrollbar-thumb {
   background: #016B61;
   border-radius: 4px;
 }
 
-.sidebar::-webkit-scrollbar-thumb:hover {
+.window::-webkit-scrollbar-thumb:hover {
   background: #015045;
 }
 
