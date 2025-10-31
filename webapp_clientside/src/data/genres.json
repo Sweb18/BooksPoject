@@ -10,5 +10,18 @@
   {
     "genre_id": 3,
     "name": "Classic"
+  },
+  {
+    "genre_id": 4,
+    "name": "Mystery"
+  },
+  {
+    "genre_id": 5,
+    "name": "Horror"
+  },
+  {
+    "genre_id": 6,
+    "name": "Fiction"
   }
+
 ]
