@@ -20,9 +20,18 @@
             <img class="save-logo" src="../assets/img/icons/save.png" alt="Save for later" />
             <p>Save for later</p>
           </div>
-          <div class="basket">
-            <img class="basket-logo" :src="basket" alt="Shopping Basket" />
-            <p>Basket</p>
+          <div
+            class="basket"
+            @click="showBasket = !showBasket;"
+            tabindex="0"
+            role="button"
+            data-test="basket-button"
+            aria-label="Open shopping basket">
+            <div class="basket-icon-wrapper">
+              <img class="basket-logo" :src="basket" alt="Shopping Basket" />
+              <span v-if="cartItemCount > 0" class="basket-count">{{ cartItemCount }}</span>
+            </div>
+            <span class="basket-text">Basket</span>
           </div>
         </div>
 
@@ -98,10 +107,10 @@
               <div class="price">{{ book.price }}</div>
               <div class="rating">
                 <i class="fas fa-star"></i>
-                <span>{{ book.rating }}/5</span>
+                <span>{{ book.rating }}</span>
               </div>
             </div>
-            <button class="add-to-cart"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+            <button class="add-to-cart" @click="addToCartFromMainPage(book)"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
           </div>
         </div>
       </div>
@@ -216,7 +225,59 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
+
+    <!-- Basket Sidebar -->
+    <div class="basket-overlay" :class="{ active: showBasket }" @click="closeBasket"></div>
+    <div class="basket-sidebar" :class="{ active: showBasket }">
+      <div class="basket-header">
+        <h2>Shopping Basket</h2>
+        <button class="close-basket" @click="closeBasket">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="basket-content">
+        <div v-if="cartItems.length === 0" class="empty-basket">
+          <i class="fas fa-shopping-basket"></i>
+          <p>Your basket is empty</p>
+          <button class="continue-shopping" @click="closeBasket">Continue Shopping</button>
+        </div>
+
+        <div v-else class="basket-items">
+          <div v-for="item in cartItems" :key="item.id" class="basket-item">
+            <img :src="item.img" :alt="item.title" class="basket-item-img" />
+            <div class="basket-item-details">
+              <h4>{{ item.title }}</h4>
+              <p class="basket-item-author">{{ item.author }}</p>
+              <p class="basket-item-price">{{ item.price }}</p>
+              <div class="quantity-controls">
+                <button @click="updateQuantity(item.id, -1)" class="qty-btn">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <span class="quantity">{{ item.quantity }}</span>
+                <button @click="updateQuantity(item.id, 1)" class="qty-btn">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+            </div>
+            <button @click="removeFromCart(item.id)" class="remove-item">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="cartItems.length > 0" class="basket-footer">
+        <div class="basket-total">
+          <span>Total:</span>
+          <span class="total-amount">${{ cartTotal }}</span>
+        </div>
+        <button class="checkout-btn">
+          <i class="fas fa-lock"></i> Proceed to Checkout
+        </button>
+      </div>
     </div>
 
     <footer class="footer">
@@ -272,6 +333,8 @@ import reviews from '../data/reviews.json';
 import publishers from '../data/publishers.json';
 import genres from '../data/genres.json';
 import bookGenres from '../data/book_genres.json';
+import lesMiserablesCover from '../assets/img/books/les_miserables.jpg';
+
 
 const bookCovers = {
   // Harry Potter
@@ -279,7 +342,7 @@ const bookCovers = {
   // 1984
   '9780451524935': book1984,
   // Les Misérables
-  '9782070409189': 'https://m.media-amazon.com/images/I/81s3toEGQgL._SY522_.jpg',
+  '9782070409189': lesMiserablesCover,
   // Pride and Prejudice
   '9780141439518': 'https://m.media-amazon.com/images/I/71Q1tPupKjL._SY522_.jpg',
   // Fallback image pour les livres sans couverture spécifique
@@ -296,6 +359,8 @@ export default {
       searchQuery: '',
       showWindow: false,
       selectedBook: null,
+      showBasket: false,
+      cartItems: [],
       genreImages: {
         'Fiction': fictionImg,
         'Mystery': mysteryImg,
@@ -344,6 +409,15 @@ export default {
           image: this.genreImages[genre.name] || fictionImg
         };
       });
+    },
+    cartTotal() {
+      return this.cartItems.reduce((total, item) => {
+        const price = parseFloat(item.price.replace('$', ''));
+        return total + (price * item.quantity);
+      }, 0).toFixed(2);
+    },
+    cartItemCount() {
+      return this.cartItems.reduce((total, item) => total + item.quantity, 0);
     }
   },
   methods: {
@@ -351,7 +425,7 @@ export default {
     getBookPrice(bookId) {
       const seed = bookId * 123.456;
       const pseudoRandom = (seed * 9301 + 49297) % 233280;
-      const price = 5 + (pseudoRandom / 233280) * 10;
+      const price = 15 + (pseudoRandom / 233280) * 20;
       return `$${price.toFixed(2)}`;
     },
     // Générer une note cohérente basée sur l'ID du livre
@@ -402,7 +476,60 @@ export default {
       }, 300);
     },
     addToCart() {
-      alert(`Added "${this.selectedBook.title}" to cart!`);
+      const existingItem = this.cartItems.find(item => item.id === this.selectedBook.book_id);
+
+      if (existingItem) {
+        existingItem.quantity++;
+      } else {
+        this.cartItems.push({
+          id: this.selectedBook.book_id,
+          title: this.selectedBook.title,
+          author: this.selectedBook.authorName,
+          price: this.selectedBook.price,
+          img: this.selectedBook.img,
+          quantity: 1
+        });
+      }
+
+      // Afficher le panier
+      this.showBasket = true;
+    },
+    addToCartFromMainPage(book) {
+      const existingItem = this.cartItems.find(item => item.id === book.id);
+
+      if (existingItem) {
+        existingItem.quantity++;
+      } else {
+        this.cartItems.push({
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          price: book.price,
+          img: book.img,
+          quantity: 1
+        });
+      }
+
+      // Afficher le panier
+      this.showBasket = true;
+    },
+    closeBasket() {
+      this.showBasket = false;
+    },
+    removeFromCart(itemId) {
+      const index = this.cartItems.findIndex(item => item.id === itemId);
+      if (index > -1) {
+        this.cartItems.splice(index, 1);
+      }
+    },
+    updateQuantity(itemId, change) {
+      const item = this.cartItems.find(item => item.id === itemId);
+      if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+          this.removeFromCart(itemId);
+        }
+      }
     }
   }
 };
@@ -439,6 +566,8 @@ export default {
   color: white;
   font-family: 'Tan Mon Cheri', sans-serif;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 100;
 }
 
 .header-content {
@@ -932,6 +1061,20 @@ export default {
   border-top: 1px solid rgba(255,255,255,0.1);
 }
 
+.basket {
+  outline: none;
+}
+
+.basket:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.basket * {
+  pointer-events: none;
+  user-select: none;
+}
+
 .header-links {
   display: flex;
   align-items: center;
@@ -952,13 +1095,18 @@ export default {
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
 }
 
 .search-shop:hover, .save:hover, .basket:hover {
   transform: translateY(-2px);
 }
 
-.search-shop p, .save p, .basket p {
+.search-shop p, .save p, .basket-text {
   margin: 0;
   font-size: 12px;
   white-space: nowrap;
@@ -1334,4 +1482,312 @@ export default {
   background: #015045;
 }
 
+/* Basket Sidebar Styles */
+.basket-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.basket-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: sans-serif;
+}
+
+.basket-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.basket-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.basket-sidebar {
+  position: fixed;
+  top: 0;
+  right: -450px;
+  width: 450px;
+  max-width: 90vw;
+  height: 100vh;
+  background: white;
+  z-index: 9999;
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.2);
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.basket-sidebar.active {
+  right: 0;
+}
+
+.basket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: #016B61;
+  color: white;
+}
+
+.basket-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.close-basket {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-basket:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.basket-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.empty-basket {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #999;
+}
+
+.empty-basket i {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #ddd;
+}
+
+.empty-basket p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.continue-shopping {
+  padding: 1rem 2rem;
+  background: #016B61;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.continue-shopping:hover {
+  background: #015045;
+  transform: translateY(-2px);
+}
+
+.basket-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.basket-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  position: relative;
+}
+
+.basket-item-img {
+  width: 80px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.basket-item-details {
+  flex: 1;
+}
+
+.basket-item-details h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.basket-item-author {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.basket-item-price {
+  margin: 0 0 0.8rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #016B61;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qty-btn {
+  background: white;
+  border: 1px solid #ddd;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.qty-btn:hover {
+  background: #016B61;
+  color: white;
+  border-color: #016B61;
+}
+
+.quantity {
+  min-width: 30px;
+  text-align: center;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.remove-item {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #e74c3c;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.remove-item:hover {
+  background: rgba(231, 76, 60, 0.1);
+  transform: scale(1.1);
+}
+
+.basket-footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  background: #f8f9fa;
+}
+
+.basket-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+}
+
+.basket-total span:first-child {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.total-amount {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #016B61;
+}
+
+.checkout-btn {
+  width: 100%;
+  padding: 1.2rem;
+  background: #016B61;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.checkout-btn:hover {
+  background: #015045;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(1, 107, 97, 0.3);
+}
+
+/* Scrollbar pour la basket sidebar */
+.basket-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.basket-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.basket-content::-webkit-scrollbar-thumb {
+  background: #016B61;
+  border-radius: 3px;
+}
+
+.basket-content::-webkit-scrollbar-thumb:hover {
+  background: #015045;
+}
 </style>
