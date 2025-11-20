@@ -379,10 +379,9 @@ export default {
         const author = authors.find(a => a.author_id === book.author_id);
         const authorName = author ? `${author.first_name} ${author.last_name}` : book.author;
 
-        // Vérifier si le livre a des avis
         const bookReviews = reviews.filter(r => r.book_id === book.book_id);
 
-        // Utiliser la moyenne des avis si disponible, sinon la note générée
+
         const rating = bookReviews.length > 0
           ? (bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length).toFixed(1)
           : this.getBookRating(book.book_id);
@@ -491,7 +490,7 @@ export default {
           img: this.selectedBook.img,
           quantity: 1
         });
-      }
+      } 
 
       // Afficher le panier
       this.showBasket = true;
