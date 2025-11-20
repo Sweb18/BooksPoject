@@ -33,6 +33,13 @@
             </div>
             <span class="basket-text">Basket</span>
           </div>
+          <div class="profile">
+            <router-link to="/profile">
+              <img class="profile-logo" src="../assets/img/icons/profile.png" alt="User Profile" />
+              <p>My Profile</p>
+            </router-link>
+
+          </div>
         </div>
 
       </div>
@@ -622,6 +629,18 @@ export default {
 
 }
 
+.profile-logo{
+  width: 42px;
+  height: 42px;
+}
+
+.profile {
+
+  margin: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .search-bar input {
   flex: 1;
   padding: 0.8rem;
@@ -1088,7 +1107,7 @@ export default {
   align-items: center;
 }
 
-.search-shop, .save, .basket {
+.search-shop, .save, .basket, .profile {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1103,14 +1122,27 @@ export default {
   font-family: inherit;
 }
 
-.search-shop:hover, .save:hover, .basket:hover {
+.search-shop:hover, .save:hover, .basket:hover, .profile:hover {
   transform: translateY(-2px);
 }
 
-.search-shop p, .save p, .basket-text {
+.search-shop p, .save p, .basket-text, .profile p {
   margin: 0;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.profile a,
+.profile a:link,
+.profile a:visited,
+.profile a:hover,
+.profile a:active {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 @media (max-width: 768px) {
