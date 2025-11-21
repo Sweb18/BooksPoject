@@ -3,6 +3,7 @@ import booksData from '../data/books.json';
 import authorsData from '../data/authors.json';
 import publishersData from '../data/publishers.json';
 import genresData from '../data/genres.json';
+import bookGenresData from '../data/book_genres.json';
 
 export default {
   data() {
@@ -17,6 +18,7 @@ export default {
       authors: this.loadAuthors(),
       publishers: this.loadPublishers(),
       genres: genresData,
+      bookGenres: this.loadBookGenres(),
 
       // Modals
       showBookModal: false,
@@ -81,14 +83,25 @@ export default {
       const savedPublishers = localStorage.getItem('publishers');
       return savedPublishers ? JSON.parse(savedPublishers) : [...publishersData];
     },
+    loadBookGenres() {
+      const savedBookGenres = localStorage.getItem('bookGenres');
+      return savedBookGenres ? JSON.parse(savedBookGenres) : [...bookGenresData];
+    },
     saveBooks() {
       localStorage.setItem('books', JSON.stringify(this.books));
+      // Enregistrer un timestamp pour notifier les changements
+      localStorage.setItem('booksLastUpdate', Date.now().toString());
     },
     saveAuthors() {
       localStorage.setItem('authors', JSON.stringify(this.authors));
+      localStorage.setItem('booksLastUpdate', Date.now().toString());
     },
     savePublishers() {
       localStorage.setItem('publishers', JSON.stringify(this.publishers));
+    },
+    saveBookGenres() {
+      localStorage.setItem('bookGenres', JSON.stringify(this.bookGenres));
+      localStorage.setItem('booksLastUpdate', Date.now().toString());
     },
     getEmptyBookForm() {
       return {
@@ -102,7 +115,9 @@ export default {
         publication_date: '',
         language: 'en',
         page_count: 0,
-        description: ''
+        description: '',
+        cover_image: '',
+        selectedGenres: []
       };
     },
     getEmptyAuthorForm() {
@@ -141,6 +156,10 @@ export default {
     openEditBookModal(book) {
       this.isEditing = true;
       this.bookForm = { ...book };
+      // Charger les genres associés au livre
+      this.bookForm.selectedGenres = this.bookGenres
+        .filter(bg => bg.book_id === book.book_id)
+        .map(bg => bg.genre_id);
       this.showBookModal = true;
       this.errorMessage = '';
     },
@@ -148,6 +167,33 @@ export default {
       this.showBookModal = false;
       this.bookForm = this.getEmptyBookForm();
       this.errorMessage = '';
+    },
+    handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        // Vérifier que c'est bien une image
+        if (!file.type.startsWith('image/')) {
+          this.errorMessage = 'Please select a valid image file';
+          return;
+        }
+
+        // Vérifier la taille (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          this.errorMessage = 'Image size must be less than 5MB';
+          return;
+        }
+
+        // Convertir l'image en base64 pour la stocker
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.bookForm.cover_image = e.target.result;
+          this.errorMessage = '';
+        };
+        reader.onerror = () => {
+          this.errorMessage = 'Error reading image file';
+        };
+        reader.readAsDataURL(file);
+      }
     },
     saveBook() {
       this.errorMessage = '';
@@ -162,6 +208,18 @@ export default {
         const index = this.books.findIndex(b => b.book_id === this.bookForm.book_id);
         if (index !== -1) {
           this.books[index] = { ...this.bookForm };
+
+          // Mettre à jour les genres du livre
+          // Supprimer les anciens genres
+          this.bookGenres = this.bookGenres.filter(bg => bg.book_id !== this.bookForm.book_id);
+          // Ajouter les nouveaux genres
+          this.bookForm.selectedGenres.forEach(genreId => {
+            this.bookGenres.push({
+              book_id: this.bookForm.book_id,
+              genre_id: genreId
+            });
+          });
+
           this.successMessage = 'Book updated successfully!';
         }
       } else {
@@ -170,17 +228,30 @@ export default {
           book_id: this.nextBookId
         };
         this.books.push(newBook);
+
+        // Ajouter les genres pour le nouveau livre
+        this.bookForm.selectedGenres.forEach(genreId => {
+          this.bookGenres.push({
+            book_id: newBook.book_id,
+            genre_id: genreId
+          });
+        });
+
         this.successMessage = 'Book added successfully!';
       }
 
       this.saveBooks();
+      this.saveBookGenres();
       this.closeBookModal();
       setTimeout(() => { this.successMessage = ''; }, 3000);
     },
     deleteBook(bookId) {
       if (confirm('Are you sure you want to delete this book?')) {
         this.books = this.books.filter(b => b.book_id !== bookId);
+        // Supprimer aussi les relations de genres pour ce livre
+        this.bookGenres = this.bookGenres.filter(bg => bg.book_id !== bookId);
         this.saveBooks();
+        this.saveBookGenres();
         this.successMessage = 'Book deleted successfully!';
         setTimeout(() => { this.successMessage = ''; }, 3000);
       }
@@ -304,6 +375,18 @@ export default {
       const publisher = this.publishers.find(p => p.publisher_id === publisherId);
       return publisher ? publisher.name : 'Unknown';
     },
+    getBookGenres(bookId) {
+      const genreIds = this.bookGenres
+        .filter(bg => bg.book_id === bookId)
+        .map(bg => bg.genre_id);
+
+      const genreNames = genreIds.map(genreId => {
+        const genre = this.genres.find(g => g.genre_id === genreId);
+        return genre ? genre.name : '';
+      }).filter(name => name);
+
+      return genreNames.length > 0 ? genreNames.join(', ') : 'N/A';
+    },
 
     handleLogout() {
       localStorage.removeItem('currentUser');
@@ -408,6 +491,7 @@ export default {
                   <th>Author</th>
                   <th>ISBN</th>
                   <th>Publisher</th>
+                  <th>Genres</th>
                   <th>Pages</th>
                   <th>Publication Date</th>
                   <th>Actions</th>
@@ -420,6 +504,7 @@ export default {
                   <td>{{ getAuthorName(book.author_id) }}</td>
                   <td>{{ book.isbn13 }}</td>
                   <td>{{ getPublisherName(book.publisher_id) }}</td>
+                  <td>{{ getBookGenres(book.book_id) }}</td>
                   <td>{{ book.page_count }}</td>
                   <td>{{ new Date(book.publication_date).toLocaleDateString() }}</td>
                   <td class="actions">
@@ -598,6 +683,21 @@ export default {
           </div>
 
           <div class="form-group">
+            <label>Genres</label>
+            <div class="genre-checkboxes">
+              <div v-for="genre in genres" :key="genre.genre_id" class="genre-checkbox">
+                <input
+                  type="checkbox"
+                  :id="'genre-' + genre.genre_id"
+                  :value="genre.genre_id"
+                  v-model="bookForm.selectedGenres"
+                />
+                <label :for="'genre-' + genre.genre_id">{{ genre.name }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
             <label>Subtitle</label>
             <input type="text" v-model="bookForm.subtitle" />
           </div>
@@ -620,6 +720,34 @@ export default {
           <div class="form-group">
             <label>Description</label>
             <textarea v-model="bookForm.description" rows="4"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Cover Image</label>
+            <div class="image-upload-container">
+              <input
+                type="file"
+                @change="handleImageUpload"
+                accept="image/*"
+                id="cover-upload"
+                class="file-input"
+              />
+              <label for="cover-upload" class="file-input-label">
+                <i class="fas fa-upload"></i>
+                Choose Image
+              </label>
+              <div v-if="bookForm.cover_image" class="image-preview">
+                <img :src="bookForm.cover_image" alt="Cover preview" />
+                <button
+                  type="button"
+                  @click="bookForm.cover_image = ''"
+                  class="remove-image"
+                  title="Remove image"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="modal-actions">
@@ -1210,6 +1338,113 @@ tbody tr:hover {
 
 .form-group textarea {
   resize: vertical;
+}
+
+.genre-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.8rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.genre-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.genre-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #016B61;
+}
+
+.genre-checkbox label {
+  cursor: pointer;
+  margin: 0;
+  font-weight: normal;
+  color: #666;
+  transition: color 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.genre-checkbox:hover label {
+  color: #016B61;
+}
+
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-input-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  background: #016B61;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  width: fit-content;
+}
+
+.file-input-label:hover {
+  background: #015550;
+  transform: translateY(-2px);
+}
+
+.file-input-label i {
+  font-size: 1.1rem;
+}
+
+.image-preview {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.image-preview img {
+  max-width: 200px;
+  max-height: 300px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  object-fit: cover;
+}
+
+.remove-image {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.remove-image:hover {
+  background: #c0392b;
+  transform: scale(1.1);
 }
 
 .modal-actions {

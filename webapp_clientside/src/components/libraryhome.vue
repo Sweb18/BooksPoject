@@ -328,7 +328,7 @@
 import logoImg from '../assets/img/icons/logo.png';
 import shopImg from '../assets/img/icons/store.png';
 import basket from '../assets/img/icons/basket.png';
-import books from '../data/books.json';
+import booksData from '../data/books.json';
 import fictionImg from '../assets/img/categories/fiction.png';
 import scienceFictionImg from '../assets/img/categories/scicence-fiction.jpeg';
 import mysteryImg from '../assets/img/categories/mystery.jpeg';
@@ -337,11 +337,11 @@ import fantasyImg from '../assets/img/categories/fantasy.jpeg';
 import classicImg from '../assets/img/categories/classic.jpeg';
 import chamberOfSecrets from '../assets/img/books/chamber_of_secrets.jpg';
 import book1984 from '../assets/img/books/1984.jpg';
-import authors from '../data/authors.json';
-import reviews from '../data/reviews.json';
-import publishers from '../data/publishers.json';
-import genres from '../data/genres.json';
-import bookGenres from '../data/book_genres.json';
+import authorsData from '../data/authors.json';
+import reviewsData from '../data/reviews.json';
+import publishersData from '../data/publishers.json';
+import genresData from '../data/genres.json';
+import bookGenresData from '../data/book_genres.json';
 import lesMiserablesCover from '../assets/img/books/les_miserables.jpg';
 
 
@@ -377,16 +377,40 @@ export default {
         'Classic': classicImg,
         'Fantasy': fantasyImg,
         'Science Fiction': scienceFictionImg
-      }
+      },
+      books: [],
+      authors: authorsData,
+      reviews: reviewsData,
+      publishers: publishersData,
+      genres: genresData,
+      bookGenres: bookGenresData,
+      storageCheckInterval: null,
+      lastBooksUpdate: null
     };
+  },
+  mounted() {
+    this.loadBooks();
+    // Écouter les changements dans localStorage
+    window.addEventListener('storage', this.handleStorageChange);
+
+    // Vérifier les changements toutes les secondes (pour les changements dans le même onglet)
+    this.storageCheckInterval = setInterval(() => {
+      this.checkForUpdates();
+    }, 1000);
+  },
+  beforeUnmount() {
+    window.removeEventListener('storage', this.handleStorageChange);
+    if (this.storageCheckInterval) {
+      clearInterval(this.storageCheckInterval);
+    }
   },
   computed: {
     formattedBooks() {
-      return books.map(book => {
-        const author = authors.find(a => a.author_id === book.author_id);
+      return this.books.map(book => {
+        const author = this.authors.find(a => a.author_id === book.author_id);
         const authorName = author ? `${author.first_name} ${author.last_name}` : book.author;
 
-        const bookReviews = reviews.filter(r => r.book_id === book.book_id);
+        const bookReviews = this.reviews.filter(r => r.book_id === book.book_id);
 
 
         const rating = bookReviews.length > 0
@@ -395,21 +419,24 @@ export default {
 
         const price = this.getBookPrice(book.book_id);
 
+        // Utiliser cover_image si elle existe, sinon utiliser bookCovers
+        const coverImage = book.cover_image || bookCovers[book.isbn13] || bookCovers.default;
+
         return {
           id: book.book_id,
           title: book.title,
           author: authorName,
           price: price,
           rating: rating,
-          img: bookCovers[book.isbn13] || bookCovers.default,
+          img: coverImage,
           description: book.description
         };
       });
     },
     featuredCategories() {
-      return genres.map(genre => {
+      return this.genres.map(genre => {
         // Compter le nombre de livres pour ce genre
-        const bookCount = bookGenres.filter(bg => bg.genre_id === genre.genre_id).length;
+        const bookCount = this.bookGenres.filter(bg => bg.genre_id === genre.genre_id).length;
 
         return {
           name: genre.name,
@@ -444,24 +471,27 @@ export default {
       return rating.toFixed(1);
     },
     openQuickView(bookId) {
-      const book = books.find(b => b.book_id === bookId);
+      const book = this.books.find(b => b.book_id === bookId);
       if (!book) return;
 
-      const author = authors.find(a => a.author_id === book.author_id);
-      const publisher = publishers.find(p => p.publisher_id === book.publisher_id);
+      const author = this.authors.find(a => a.author_id === book.author_id);
+      const publisher = this.publishers.find(p => p.publisher_id === book.publisher_id);
 
-      const bookGenreIds = bookGenres
+      const bookGenreIds = this.bookGenres
         .filter(bg => bg.book_id === book.book_id)
         .map(bg => bg.genre_id);
-      const bookGenresList = genres
+      const bookGenresList = this.genres
         .filter(g => bookGenreIds.includes(g.genre_id))
         .map(g => g.name);
 
-      const bookReviews = reviews.filter(r => r.book_id === book.book_id);
+      const bookReviews = this.reviews.filter(r => r.book_id === book.book_id);
 
       const avgRating = bookReviews.length > 0
         ? (bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length).toFixed(1)
         : this.getBookRating(book.book_id);
+
+      // Utiliser cover_image si elle existe, sinon utiliser bookCovers
+      const coverImage = book.cover_image || bookCovers[book.isbn13] || bookCovers.default;
 
       this.selectedBook = {
         ...book,
@@ -472,7 +502,7 @@ export default {
         reviews: bookReviews,
         avgRating: avgRating,
         price: this.getBookPrice(book.book_id),
-        img: bookCovers[book.isbn13] || bookCovers.default
+        img: coverImage
       };
 
       this.showWindow = true;
@@ -537,6 +567,28 @@ export default {
         if (item.quantity <= 0) {
           this.removeFromCart(itemId);
         }
+      }
+    },
+    loadBooks() {
+      // Charger les livres depuis localStorage, sinon utiliser les données importées
+      const savedBooks = localStorage.getItem('books');
+      this.books = savedBooks ? JSON.parse(savedBooks) : booksData;
+
+      // Charger aussi les autres données si elles existent dans localStorage
+      const savedAuthors = localStorage.getItem('authors');
+      if (savedAuthors) this.authors = JSON.parse(savedAuthors);
+
+      const savedBookGenres = localStorage.getItem('bookGenres');
+      if (savedBookGenres) this.bookGenres = JSON.parse(savedBookGenres);
+
+      // Enregistrer le timestamp de la dernière mise à jour
+      this.lastBooksUpdate = localStorage.getItem('booksLastUpdate');
+    },
+    checkForUpdates() {
+      // Vérifier si les livres ont été mis à jour
+      const currentUpdate = localStorage.getItem('booksLastUpdate');
+      if (currentUpdate && currentUpdate !== this.lastBooksUpdate) {
+        this.loadBooks();
       }
     }
   }
