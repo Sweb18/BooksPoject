@@ -9,7 +9,7 @@ npm install
 
 2. Configurer la base de données :
    - Créer une base de données MySQL nommée `library_db`
-   - Importer le fichier SQL : `library_database.sql`
+   - Importer le fichier SQL : `library_db.sql`
 
 3. Configurer les variables d'environnement :
    - Modifier le fichier `.env` avec vos paramètres de base de données

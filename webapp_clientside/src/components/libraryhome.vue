@@ -328,7 +328,6 @@
 import logoImg from '../assets/img/icons/logo.png';
 import shopImg from '../assets/img/icons/store.png';
 import basket from '../assets/img/icons/basket.png';
-import books from '../data/books.json';
 import fictionImg from '../assets/img/categories/fiction.png';
 import scienceFictionImg from '../assets/img/categories/scicence-fiction.jpeg';
 import mysteryImg from '../assets/img/categories/mystery.jpeg';
@@ -337,13 +336,9 @@ import fantasyImg from '../assets/img/categories/fantasy.jpeg';
 import classicImg from '../assets/img/categories/classic.jpeg';
 import chamberOfSecrets from '../assets/img/books/chamber_of_secrets.jpg';
 import book1984 from '../assets/img/books/1984.jpg';
-import authors from '../data/authors.json';
-import reviews from '../data/reviews.json';
-import publishers from '../data/publishers.json';
-import genres from '../data/genres.json';
-import bookGenres from '../data/book_genres.json';
 import lesMiserablesCover from '../assets/img/books/les_miserables.jpg';
 
+const API_URL = 'http://localhost:3000/api';
 
 const bookCovers = {
   // Harry Potter
@@ -377,16 +372,25 @@ export default {
         'Classic': classicImg,
         'Fantasy': fantasyImg,
         'Science Fiction': scienceFictionImg
-      }
+      },
+      books: [],
+      authors: [],
+      reviews: [],
+      publishers: [],
+      genres: [],
+      bookGenres: []
     };
+  },
+  async mounted() {
+    await this.fetchData();
   },
   computed: {
     formattedBooks() {
-      return books.map(book => {
-        const author = authors.find(a => a.author_id === book.author_id);
+      return this.books.map(book => {
+        const author = this.authors.find(a => a.author_id === book.author_id);
         const authorName = author ? `${author.first_name} ${author.last_name}` : book.author;
 
-        const bookReviews = reviews.filter(r => r.book_id === book.book_id);
+        const bookReviews = this.reviews.filter(r => r.book_id === book.book_id);
 
 
         const rating = bookReviews.length > 0
@@ -407,9 +411,9 @@ export default {
       });
     },
     featuredCategories() {
-      return genres.map(genre => {
+      return this.genres.map(genre => {
         // Compter le nombre de livres pour ce genre
-        const bookCount = bookGenres.filter(bg => bg.genre_id === genre.genre_id).length;
+        const bookCount = this.bookGenres.filter(bg => bg.genre_id === genre.genre_id).length;
 
         return {
           name: genre.name,
@@ -444,20 +448,20 @@ export default {
       return rating.toFixed(1);
     },
     openQuickView(bookId) {
-      const book = books.find(b => b.book_id === bookId);
+      const book = this.books.find(b => b.book_id === bookId);
       if (!book) return;
 
-      const author = authors.find(a => a.author_id === book.author_id);
-      const publisher = publishers.find(p => p.publisher_id === book.publisher_id);
+      const author = this.authors.find(a => a.author_id === book.author_id);
+      const publisher = this.publishers.find(p => p.publisher_id === book.publisher_id);
 
-      const bookGenreIds = bookGenres
+      const bookGenreIds = this.bookGenres
         .filter(bg => bg.book_id === book.book_id)
         .map(bg => bg.genre_id);
-      const bookGenresList = genres
+      const bookGenresList = this.genres
         .filter(g => bookGenreIds.includes(g.genre_id))
         .map(g => g.name);
 
-      const bookReviews = reviews.filter(r => r.book_id === book.book_id);
+      const bookReviews = this.reviews.filter(r => r.book_id === book.book_id);
 
       const avgRating = bookReviews.length > 0
         ? (bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length).toFixed(1)
@@ -537,6 +541,27 @@ export default {
         if (item.quantity <= 0) {
           this.removeFromCart(itemId);
         }
+      }
+    },
+    async fetchData() {
+      try {
+        const [booksRes, authorsRes, reviewsRes, publishersRes, genresRes, bookGenresRes] = await Promise.all([
+          fetch(`${API_URL}/books`),
+          fetch(`${API_URL}/authors`),
+          fetch(`${API_URL}/reviews`),
+          fetch(`${API_URL}/publishers`),
+          fetch(`${API_URL}/genres`),
+          fetch(`${API_URL}/book-genres`)
+        ]);
+
+        this.books = await booksRes.json();
+        this.authors = await authorsRes.json();
+        this.reviews = await reviewsRes.json();
+        this.publishers = await publishersRes.json();
+        this.genres = await genresRes.json();
+        this.bookGenres = await bookGenresRes.json();
+      } catch (error) {
+        console.error('Error fetching data:', error);
       }
     }
   }

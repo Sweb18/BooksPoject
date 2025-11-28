@@ -1,8 +1,5 @@
 <script>
-import booksData from '../data/books.json';
-import authorsData from '../data/authors.json';
-import publishersData from '../data/publishers.json';
-import genresData from '../data/genres.json';
+const API_URL = 'http://localhost:3000/api';
 
 export default {
   data() {
@@ -12,89 +9,118 @@ export default {
       basket: require('../assets/img/icons/basket.png'),
       searchQuery: '',
       currentUser: null,
-      activeTab: 'books', // books, authors, publishers
-      books: this.loadBooks(),
-      authors: this.loadAuthors(),
-      publishers: this.loadPublishers(),
-      genres: genresData,
-
-      // Modals
+      activeTab: 'books',
+      books: [],
+      authors: [],
+      publishers: [],
+      genres: [],
       showBookModal: false,
       showAuthorModal: false,
       showPublisherModal: false,
       isEditing: false,
-
-      // Forms
       bookForm: this.getEmptyBookForm(),
       authorForm: this.getEmptyAuthorForm(),
       publisherForm: this.getEmptyPublisherForm(),
-
-      // Messages
       errorMessage: '',
-      successMessage: ''
+      successMessage: '',
+      isLoading: false,
+      usingAPI: false
     }
   },
   computed: {
     isAdmin() {
       return this.currentUser && this.currentUser.role === 'ADMIN';
     },
-    nextBookId() {
-      return this.books.length > 0 ? Math.max(...this.books.map(b => b.book_id)) + 1 : 1;
-    },
-    nextAuthorId() {
-      return this.authors.length > 0 ? Math.max(...this.authors.map(a => a.author_id)) + 1 : 1;
-    },
-    nextPublisherId() {
-      return this.publishers.length > 0 ? Math.max(...this.publishers.map(p => p.publisher_id)) + 1 : 1;
-    },
     filteredBooks() {
       if (!this.searchQuery) return this.books;
       const query = this.searchQuery.toLowerCase();
       return this.books.filter(book =>
         book.title.toLowerCase().includes(query) ||
-        book.author.toLowerCase().includes(query) ||
+        (book.author_name && book.author_name.toLowerCase().includes(query)) ||
+        (book.author && book.author.toLowerCase().includes(query)) ||
         book.isbn13.includes(query)
       );
     }
   },
-  mounted() {
+  async mounted() {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       this.currentUser = JSON.parse(savedUser);
       if (!this.isAdmin) {
         this.$router.push('/');
+      } else {
+        await this.loadAllData();
       }
     } else {
       this.$router.push('/profile');
     }
   },
   methods: {
-    loadBooks() {
-      const savedBooks = localStorage.getItem('books');
-      return savedBooks ? JSON.parse(savedBooks) : [...booksData];
+    async loadAllData() {
+      this.isLoading = true;
+      this.errorMessage = '';
+      try {
+        await Promise.all([
+          this.loadBooks(),
+          this.loadAuthors(),
+          this.loadPublishers(),
+          this.loadGenres()
+        ]);
+
+        if (this.usingAPI) {
+          console.log('✓ All data loaded from API successfully');
+          console.log(`Books: ${this.books.length}, Authors: ${this.authors.length}, Publishers: ${this.publishers.length}, Genres: ${this.genres.length}`);
+        }
+      } catch (error) {
+        console.error('✗ Error loading data from API:', error);
+        this.errorMessage = 'Cannot connect to API server. Please ensure:\n1. The server is running (npm start in webapp_serverside)\n2. MySQL is running\n3. Database is configured in .env';
+        this.usingAPI = false;
+      } finally {
+        this.isLoading = false;
+      }
     },
-    loadAuthors() {
-      const savedAuthors = localStorage.getItem('authors');
-      return savedAuthors ? JSON.parse(savedAuthors) : [...authorsData];
+
+    async loadBooks() {
+      const response = await fetch(`${API_URL}/books`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error(`Failed to load books: ${response.status}`);
+      this.books = await response.json();
+      this.usingAPI = true;
     },
-    loadPublishers() {
-      const savedPublishers = localStorage.getItem('publishers');
-      return savedPublishers ? JSON.parse(savedPublishers) : [...publishersData];
+
+    async loadAuthors() {
+      const response = await fetch(`${API_URL}/authors`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error(`Failed to load authors: ${response.status}`);
+      this.authors = await response.json();
     },
-    saveBooks() {
-      localStorage.setItem('books', JSON.stringify(this.books));
+
+    async loadPublishers() {
+      const response = await fetch(`${API_URL}/publishers`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error(`Failed to load publishers: ${response.status}`);
+      this.publishers = await response.json();
     },
-    saveAuthors() {
-      localStorage.setItem('authors', JSON.stringify(this.authors));
+
+    async loadGenres() {
+      const response = await fetch(`${API_URL}/genres`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error(`Failed to load genres: ${response.status}`);
+      this.genres = await response.json();
     },
-    savePublishers() {
-      localStorage.setItem('publishers', JSON.stringify(this.publishers));
-    },
+
     getEmptyBookForm() {
       return {
         book_id: null,
         title: '',
-        author: '',
         subtitle: '',
         isbn13: '',
         author_id: null,
@@ -105,6 +131,7 @@ export default {
         description: ''
       };
     },
+
     getEmptyAuthorForm() {
       return {
         author_id: null,
@@ -118,6 +145,7 @@ export default {
         portrait_url: ''
       };
     },
+
     getEmptyPublisherForm() {
       return {
         publisher_id: null,
@@ -131,25 +159,49 @@ export default {
       };
     },
 
-    // Book Actions
     openAddBookModal() {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot add books.';
+        return;
+      }
       this.isEditing = false;
       this.bookForm = this.getEmptyBookForm();
       this.showBookModal = true;
       this.errorMessage = '';
     },
+
     openEditBookModal(book) {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot edit books.';
+        return;
+      }
       this.isEditing = true;
-      this.bookForm = { ...book };
+
+      // Copier seulement les champs nécessaires et s'assurer du bon type
+      this.bookForm = {
+        book_id: book.book_id,
+        title: book.title || '',
+        subtitle: book.subtitle || '',
+        isbn13: book.isbn13 || '',
+        author_id: book.author_id || null,
+        publisher_id: book.publisher_id || null,
+        publication_date: book.publication_date ? book.publication_date.split('T')[0] : '',
+        language: book.language || 'en',
+        page_count: book.page_count || 0,
+        description: book.description || ''
+      };
+
       this.showBookModal = true;
       this.errorMessage = '';
     },
+
     closeBookModal() {
       this.showBookModal = false;
       this.bookForm = this.getEmptyBookForm();
       this.errorMessage = '';
     },
-    saveBook() {
+
+    async saveBook() {
       this.errorMessage = '';
       this.successMessage = '';
 
@@ -158,53 +210,100 @@ export default {
         return;
       }
 
-      if (this.isEditing) {
-        const index = this.books.findIndex(b => b.book_id === this.bookForm.book_id);
-        if (index !== -1) {
-          this.books[index] = { ...this.bookForm };
-          this.successMessage = 'Book updated successfully!';
+      try {
+        const url = this.isEditing
+          ? `${API_URL}/books/${this.bookForm.book_id}`
+          : `${API_URL}/books`;
+
+        const method = this.isEditing ? 'PUT' : 'POST';
+
+        console.log('Saving book:', method, url);
+        console.log('Book form data:', this.bookForm);
+
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(this.bookForm)
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Server error:', error);
+          throw new Error(error.error || 'Failed to save book');
         }
-      } else {
-        const newBook = {
-          ...this.bookForm,
-          book_id: this.nextBookId
-        };
-        this.books.push(newBook);
-        this.successMessage = 'Book added successfully!';
+
+        const result = await response.json();
+        console.log('Server response:', result);
+
+        this.successMessage = this.isEditing ? 'Book updated successfully!' : 'Book added successfully!';
+        await this.loadBooks();
+        this.closeBookModal();
+        setTimeout(() => { this.successMessage = ''; }, 10000);
+      } catch (error) {
+        console.error('Error saving book:', error);
+        this.errorMessage = error.message;
+      }
+    },
+
+    async deleteBook(bookId) {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot delete books.';
+        return;
       }
 
-      this.saveBooks();
-      this.closeBookModal();
-      setTimeout(() => { this.successMessage = ''; }, 3000);
-    },
-    deleteBook(bookId) {
-      if (confirm('Are you sure you want to delete this book?')) {
-        this.books = this.books.filter(b => b.book_id !== bookId);
-        this.saveBooks();
+      if (!confirm('Are you sure you want to delete this book?')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/books/${bookId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to delete book');
+        }
+
         this.successMessage = 'Book deleted successfully!';
+        await this.loadBooks();
         setTimeout(() => { this.successMessage = ''; }, 3000);
+      } catch (error) {
+        this.errorMessage = error.message;
       }
     },
 
-    // Author Actions
     openAddAuthorModal() {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot add authors.';
+        return;
+      }
       this.isEditing = false;
       this.authorForm = this.getEmptyAuthorForm();
       this.showAuthorModal = true;
       this.errorMessage = '';
     },
+
     openEditAuthorModal(author) {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot edit authors.';
+        return;
+      }
       this.isEditing = true;
       this.authorForm = { ...author };
       this.showAuthorModal = true;
       this.errorMessage = '';
     },
+
     closeAuthorModal() {
       this.showAuthorModal = false;
       this.authorForm = this.getEmptyAuthorForm();
       this.errorMessage = '';
     },
-    saveAuthor() {
+
+    async saveAuthor() {
       this.errorMessage = '';
       this.successMessage = '';
 
@@ -213,53 +312,90 @@ export default {
         return;
       }
 
-      if (this.isEditing) {
-        const index = this.authors.findIndex(a => a.author_id === this.authorForm.author_id);
-        if (index !== -1) {
-          this.authors[index] = { ...this.authorForm };
-          this.successMessage = 'Author updated successfully!';
+      try {
+        const url = this.isEditing
+          ? `${API_URL}/authors/${this.authorForm.author_id}`
+          : `${API_URL}/authors`;
+
+        const method = this.isEditing ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(this.authorForm)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to save author');
         }
-      } else {
-        const newAuthor = {
-          ...this.authorForm,
-          author_id: this.nextAuthorId
-        };
-        this.authors.push(newAuthor);
-        this.successMessage = 'Author added successfully!';
+
+        this.successMessage = this.isEditing ? 'Author updated successfully!' : 'Author added successfully!';
+        await this.loadAuthors();
+        this.closeAuthorModal();
+        setTimeout(() => { this.successMessage = ''; }, 10000);
+      } catch (error) {
+        this.errorMessage = error.message;
+      }
+    },
+
+    async deleteAuthor(authorId) {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot delete authors.';
+        return;
       }
 
-      this.saveAuthors();
-      this.closeAuthorModal();
-      setTimeout(() => { this.successMessage = ''; }, 3000);
-    },
-    deleteAuthor(authorId) {
-      if (confirm('Are you sure you want to delete this author?')) {
-        this.authors = this.authors.filter(a => a.author_id !== authorId);
-        this.saveAuthors();
+      if (!confirm('Are you sure you want to delete this author?')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/authors/${authorId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to delete author');
+        }
+
         this.successMessage = 'Author deleted successfully!';
+        await this.loadAuthors();
         setTimeout(() => { this.successMessage = ''; }, 3000);
+      } catch (error) {
+        this.errorMessage = error.message;
       }
     },
 
-    // Publisher Actions
     openAddPublisherModal() {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot add publishers.';
+        return;
+      }
       this.isEditing = false;
       this.publisherForm = this.getEmptyPublisherForm();
       this.showPublisherModal = true;
       this.errorMessage = '';
     },
+
     openEditPublisherModal(publisher) {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot edit publishers.';
+        return;
+      }
       this.isEditing = true;
       this.publisherForm = { ...publisher };
       this.showPublisherModal = true;
       this.errorMessage = '';
     },
+
     closePublisherModal() {
       this.showPublisherModal = false;
       this.publisherForm = this.getEmptyPublisherForm();
       this.errorMessage = '';
     },
-    savePublisher() {
+
+    async savePublisher() {
       this.errorMessage = '';
       this.successMessage = '';
 
@@ -268,31 +404,58 @@ export default {
         return;
       }
 
-      if (this.isEditing) {
-        const index = this.publishers.findIndex(p => p.publisher_id === this.publisherForm.publisher_id);
-        if (index !== -1) {
-          this.publishers[index] = { ...this.publisherForm };
-          this.successMessage = 'Publisher updated successfully!';
+      try {
+        const url = this.isEditing
+          ? `${API_URL}/publishers/${this.publisherForm.publisher_id}`
+          : `${API_URL}/publishers`;
+
+        const method = this.isEditing ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(this.publisherForm)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to save publisher');
         }
-      } else {
-        const newPublisher = {
-          ...this.publisherForm,
-          publisher_id: this.nextPublisherId
-        };
-        this.publishers.push(newPublisher);
-        this.successMessage = 'Publisher added successfully!';
+
+        this.successMessage = this.isEditing ? 'Publisher updated successfully!' : 'Publisher added successfully!';
+        await this.loadPublishers();
+        this.closePublisherModal();
+        setTimeout(() => { this.successMessage = ''; }, 10000);
+      } catch (error) {
+        this.errorMessage = error.message;
+      }
+    },
+
+    async deletePublisher(publisherId) {
+      if (!this.usingAPI) {
+        this.errorMessage = 'API not connected. Cannot delete publishers.';
+        return;
       }
 
-      this.savePublishers();
-      this.closePublisherModal();
-      setTimeout(() => { this.successMessage = ''; }, 3000);
-    },
-    deletePublisher(publisherId) {
-      if (confirm('Are you sure you want to delete this publisher?')) {
-        this.publishers = this.publishers.filter(p => p.publisher_id !== publisherId);
-        this.savePublishers();
+      if (!confirm('Are you sure you want to delete this publisher?')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/publishers/${publisherId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to delete publisher');
+        }
+
         this.successMessage = 'Publisher deleted successfully!';
+        await this.loadPublishers();
         setTimeout(() => { this.successMessage = ''; }, 3000);
+      } catch (error) {
+        this.errorMessage = error.message;
       }
     },
 
@@ -300,6 +463,7 @@ export default {
       const author = this.authors.find(a => a.author_id === authorId);
       return author ? `${author.first_name} ${author.last_name}` : 'Unknown';
     },
+
     getPublisherName(publisherId) {
       const publisher = this.publishers.find(p => p.publisher_id === publisherId);
       return publisher ? publisher.name : 'Unknown';
@@ -322,7 +486,6 @@ export default {
           <input type="text" placeholder="Search in admin panel..." v-model="searchQuery" />
           <button class="search-button"><i class="fas fa-search"></i></button>
         </div>
-
         <div class="header-links">
           <router-link to="/" class="admin-link">
             <i class="fas fa-home"></i>
@@ -330,7 +493,7 @@ export default {
           </router-link>
           <div class="admin-user">
             <i class="fas fa-user-shield"></i>
-            <p>{{ currentUser.username }}</p>
+            <p>{{ currentUser ? currentUser.username : 'Admin' }}</p>
           </div>
         </div>
       </div>
@@ -339,20 +502,22 @@ export default {
     <div class="admin-container">
       <div class="admin-sidebar">
         <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+        <div v-if="!usingAPI" class="api-status warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>API Disconnected</p>
+        </div>
+        <div v-else class="api-status success">
+          <i class="fas fa-check-circle"></i>
+          <p>API Connected</p>
+        </div>
         <nav class="sidebar-nav">
-          <button
-            :class="{ active: activeTab === 'books' }"
-            @click="activeTab = 'books'">
+          <button :class="{ active: activeTab === 'books' }" @click="activeTab = 'books'">
             <i class="fas fa-book"></i> Manage Books
           </button>
-          <button
-            :class="{ active: activeTab === 'authors' }"
-            @click="activeTab = 'authors'">
+          <button :class="{ active: activeTab === 'authors' }" @click="activeTab = 'authors'">
             <i class="fas fa-pen-fancy"></i> Manage Authors
           </button>
-          <button
-            :class="{ active: activeTab === 'publishers' }"
-            @click="activeTab = 'publishers'">
+          <button :class="{ active: activeTab === 'publishers' }" @click="activeTab = 'publishers'">
             <i class="fas fa-building"></i> Manage Publishers
           </button>
           <button class="logout-btn" @click="handleLogout">
@@ -362,10 +527,16 @@ export default {
       </div>
 
       <div class="admin-content">
-        <!-- Messages -->
+        <div v-if="isLoading" class="loading-indicator">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading data from server...</p>
+        </div>
+
         <div v-if="errorMessage" class="error-message">
           <i class="fas fa-exclamation-circle"></i>
-          <p>{{ errorMessage }}</p>
+          <div>
+            <p style="white-space: pre-line;">{{ errorMessage }}</p>
+          </div>
         </div>
 
         <div v-if="successMessage" class="success-message">
@@ -377,7 +548,7 @@ export default {
         <div v-if="activeTab === 'books'" class="tab-content">
           <div class="content-header">
             <h2><i class="fas fa-book"></i> Books Management</h2>
-            <button class="add-button" @click="openAddBookModal">
+            <button class="add-button" @click="openAddBookModal" :disabled="!usingAPI">
               <i class="fas fa-plus"></i> Add New Book
             </button>
           </div>
@@ -409,7 +580,6 @@ export default {
                   <th>ISBN</th>
                   <th>Publisher</th>
                   <th>Pages</th>
-                  <th>Publication Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -417,16 +587,15 @@ export default {
                 <tr v-for="book in filteredBooks" :key="book.book_id">
                   <td>{{ book.book_id }}</td>
                   <td class="book-title">{{ book.title }}</td>
-                  <td>{{ getAuthorName(book.author_id) }}</td>
+                  <td>{{ book.author_name || book.author || getAuthorName(book.author_id) }}</td>
                   <td>{{ book.isbn13 }}</td>
-                  <td>{{ getPublisherName(book.publisher_id) }}</td>
+                  <td>{{ book.publisher_name || getPublisherName(book.publisher_id) }}</td>
                   <td>{{ book.page_count }}</td>
-                  <td>{{ new Date(book.publication_date).toLocaleDateString() }}</td>
                   <td class="actions">
-                    <button class="edit-btn" @click="openEditBookModal(book)">
+                    <button class="edit-btn" @click="openEditBookModal(book)" title="Edit" :disabled="!usingAPI">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button class="delete-btn" @click="deleteBook(book.book_id)">
+                    <button class="delete-btn" @click="deleteBook(book.book_id)" title="Delete" :disabled="!usingAPI">
                       <i class="fas fa-trash"></i>
                     </button>
                   </td>
@@ -440,7 +609,7 @@ export default {
         <div v-if="activeTab === 'authors'" class="tab-content">
           <div class="content-header">
             <h2><i class="fas fa-pen-fancy"></i> Authors Management</h2>
-            <button class="add-button" @click="openAddAuthorModal">
+            <button class="add-button" @click="openAddAuthorModal" :disabled="!usingAPI">
               <i class="fas fa-plus"></i> Add New Author
             </button>
           </div>
@@ -463,7 +632,6 @@ export default {
                   <th>Name</th>
                   <th>Nationality</th>
                   <th>Birth Date</th>
-                  <th>Website</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -471,19 +639,13 @@ export default {
                 <tr v-for="author in authors" :key="author.author_id">
                   <td>{{ author.author_id }}</td>
                   <td class="author-name">{{ author.first_name }} {{ author.last_name }}</td>
-                  <td>{{ author.nationality }}</td>
+                  <td>{{ author.nationality || 'N/A' }}</td>
                   <td>{{ author.birth_date ? new Date(author.birth_date).toLocaleDateString() : 'N/A' }}</td>
-                  <td>
-                    <a v-if="author.website" :href="author.website" target="_blank" class="website-link">
-                      <i class="fas fa-external-link-alt"></i>
-                    </a>
-                    <span v-else>-</span>
-                  </td>
                   <td class="actions">
-                    <button class="edit-btn" @click="openEditAuthorModal(author)">
+                    <button class="edit-btn" @click="openEditAuthorModal(author)" title="Edit" :disabled="!usingAPI">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button class="delete-btn" @click="deleteAuthor(author.author_id)">
+                    <button class="delete-btn" @click="deleteAuthor(author.author_id)" title="Delete" :disabled="!usingAPI">
                       <i class="fas fa-trash"></i>
                     </button>
                   </td>
@@ -497,7 +659,7 @@ export default {
         <div v-if="activeTab === 'publishers'" class="tab-content">
           <div class="content-header">
             <h2><i class="fas fa-building"></i> Publishers Management</h2>
-            <button class="add-button" @click="openAddPublisherModal">
+            <button class="add-button" @click="openAddPublisherModal" :disabled="!usingAPI">
               <i class="fas fa-plus"></i> Add New Publisher
             </button>
           </div>
@@ -521,7 +683,6 @@ export default {
                   <th>Country</th>
                   <th>City</th>
                   <th>Founded</th>
-                  <th>Contact</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -529,15 +690,14 @@ export default {
                 <tr v-for="publisher in publishers" :key="publisher.publisher_id">
                   <td>{{ publisher.publisher_id }}</td>
                   <td class="publisher-name">{{ publisher.name }}</td>
-                  <td>{{ publisher.country }}</td>
-                  <td>{{ publisher.headquarters_city }}</td>
-                  <td>{{ publisher.founded_year }}</td>
-                  <td>{{ publisher.contact_email || '-' }}</td>
+                  <td>{{ publisher.country || 'N/A' }}</td>
+                  <td>{{ publisher.headquarters_city || 'N/A' }}</td>
+                  <td>{{ publisher.founded_year || 'N/A' }}</td>
                   <td class="actions">
-                    <button class="edit-btn" @click="openEditPublisherModal(publisher)">
+                    <button class="edit-btn" @click="openEditPublisherModal(publisher)" title="Edit" :disabled="!usingAPI">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button class="delete-btn" @click="deletePublisher(publisher.publisher_id)">
+                    <button class="delete-btn" @click="deletePublisher(publisher.publisher_id)" title="Delete" :disabled="!usingAPI">
                       <i class="fas fa-trash"></i>
                     </button>
                   </td>
@@ -559,11 +719,6 @@ export default {
           </button>
         </div>
 
-        <div v-if="errorMessage" class="error-message">
-          <i class="fas fa-exclamation-circle"></i>
-          <p>{{ errorMessage }}</p>
-        </div>
-
         <form @submit.prevent="saveBook" class="modal-form">
           <div class="form-row">
             <div class="form-group">
@@ -579,7 +734,7 @@ export default {
           <div class="form-row">
             <div class="form-group">
               <label>Author</label>
-              <select v-model="bookForm.author_id">
+              <select v-model.number="bookForm.author_id">
                 <option :value="null">Select Author</option>
                 <option v-for="author in authors" :key="author.author_id" :value="author.author_id">
                   {{ author.first_name }} {{ author.last_name }}
@@ -588,7 +743,7 @@ export default {
             </div>
             <div class="form-group">
               <label>Publisher</label>
-              <select v-model="bookForm.publisher_id">
+              <select v-model.number="bookForm.publisher_id">
                 <option :value="null">Select Publisher</option>
                 <option v-for="publisher in publishers" :key="publisher.publisher_id" :value="publisher.publisher_id">
                   {{ publisher.name }}
@@ -613,7 +768,7 @@ export default {
             </div>
             <div class="form-group">
               <label>Page Count</label>
-              <input type="number" v-model="bookForm.page_count" />
+              <input type="number" v-model.number="bookForm.page_count" />
             </div>
           </div>
 
@@ -644,11 +799,6 @@ export default {
           </button>
         </div>
 
-        <div v-if="errorMessage" class="error-message">
-          <i class="fas fa-exclamation-circle"></i>
-          <p>{{ errorMessage }}</p>
-        </div>
-
         <form @submit.prevent="saveAuthor" class="modal-form">
           <div class="form-row">
             <div class="form-group">
@@ -670,26 +820,11 @@ export default {
               <label>Birth Date</label>
               <input type="date" v-model="authorForm.birth_date" />
             </div>
-            <div class="form-group">
-              <label>Death Date</label>
-              <input type="date" v-model="authorForm.death_date" />
-            </div>
           </div>
 
           <div class="form-group">
             <label>Biography</label>
             <textarea v-model="authorForm.bio" rows="3"></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Website</label>
-              <input type="url" v-model="authorForm.website" />
-            </div>
-            <div class="form-group">
-              <label>Portrait URL</label>
-              <input type="url" v-model="authorForm.portrait_url" />
-            </div>
           </div>
 
           <div class="modal-actions">
@@ -714,11 +849,6 @@ export default {
           </button>
         </div>
 
-        <div v-if="errorMessage" class="error-message">
-          <i class="fas fa-exclamation-circle"></i>
-          <p>{{ errorMessage }}</p>
-        </div>
-
         <form @submit.prevent="savePublisher" class="modal-form">
           <div class="form-group">
             <label>Name *</label>
@@ -740,21 +870,6 @@ export default {
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Website</label>
-              <input type="url" v-model="publisherForm.website" />
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" v-model="publisherForm.contact_email" />
-            </div>
-            <div class="form-group">
-              <label>Phone</label>
-              <input type="tel" v-model="publisherForm.phone" />
-            </div>
-          </div>
-
           <div class="modal-actions">
             <button type="submit" class="save-btn">
               <i class="fas fa-save"></i> {{ isEditing ? 'Update' : 'Create' }}
@@ -768,7 +883,6 @@ export default {
     </div>
   </div>
 
-  <!-- Access Denied -->
   <div v-else class="access-denied">
     <i class="fas fa-lock"></i>
     <h2>Access Denied</h2>
@@ -781,9 +895,12 @@ export default {
 @font-face {
   font-family: 'Tan Mon Cheri';
   src: url('../assets/font/tan-mon-cheri.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .admin-page {
@@ -797,6 +914,9 @@ export default {
   color: white;
   font-family: 'Tan Mon Cheri', sans-serif;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header-content {
@@ -805,11 +925,14 @@ export default {
   justify-content: space-between;
   gap: 2rem;
   padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .logo {
   width: 80px;
   height: 80px;
+  object-fit: contain;
 }
 
 .search-bar {
@@ -824,6 +947,7 @@ export default {
   border: none;
   border-radius: 4px 0 0 4px;
   font-size: 1rem;
+  outline: none;
 }
 
 .search-button {
@@ -833,6 +957,11 @@ export default {
   border-radius: 0 4px 4px 0;
   color: white;
   cursor: pointer;
+  transition: background 0.3s;
+}
+
+.search-button:hover {
+  background: #c0392b;
 }
 
 .header-links {
@@ -849,6 +978,11 @@ export default {
   color: white;
   text-decoration: none;
   cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.admin-link:hover {
+  opacity: 0.8;
 }
 
 .admin-link i, .admin-user i {
@@ -863,6 +997,8 @@ export default {
 .admin-container {
   display: flex;
   min-height: calc(100vh - 120px);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .admin-sidebar {
@@ -874,11 +1010,32 @@ export default {
 
 .admin-sidebar h2 {
   color: #016B61;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   font-size: 1.5rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.api-status {
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.api-status.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.api-status.warning {
+  background: #fff3cd;
+  color: #856404;
 }
 
 .sidebar-nav {
@@ -890,21 +1047,20 @@ export default {
 .sidebar-nav button {
   padding: 1rem;
   border: none;
-  background: transparent;
+  background: #f8f9fa;
   text-align: left;
   cursor: pointer;
   border-radius: 8px;
-  transition: all 0.3s ease;
   font-size: 1rem;
-  color: #666;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.5rem;
+  transition: all 0.3s;
 }
 
 .sidebar-nav button:hover {
-  background: rgba(1, 107, 97, 0.1);
-  color: #016B61;
+  background: #e9ecef;
+  transform: translateX(5px);
 }
 
 .sidebar-nav button.active {
@@ -913,13 +1069,13 @@ export default {
 }
 
 .sidebar-nav button i {
-  font-size: 1.2rem;
+  width: 20px;
 }
 
 .logout-btn {
+  margin-top: auto;
   background: #e74c3c !important;
   color: white !important;
-  margin-top: 2rem;
 }
 
 .logout-btn:hover {
@@ -929,6 +1085,60 @@ export default {
 .admin-content {
   flex: 1;
   padding: 2rem;
+  overflow-x: auto;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 3rem;
+  color: #016B61;
+}
+
+.loading-indicator i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.error-message, .success-message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  animation: slideIn 0.3s;
+}
+
+.error-message {
+  background: #fee;
+  color: #c00;
+  border: 1px solid #fcc;
+}
+
+.success-message {
+  background: #efe;
+  color: #060;
+  border: 1px solid #cfc;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-content {
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .content-header {
@@ -939,8 +1149,7 @@ export default {
 }
 
 .content-header h2 {
-  color: #2c3e50;
-  font-size: 1.8rem;
+  color: #016B61;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -953,17 +1162,22 @@ export default {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.3s;
 }
 
-.add-button:hover {
+.add-button:hover:not(:disabled) {
   background: #015550;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(1, 107, 97, 0.3);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.add-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .stats-cards {
@@ -977,10 +1191,16 @@ export default {
   background: white;
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   gap: 1rem;
+  transition: transform 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .stat-card i {
@@ -990,22 +1210,20 @@ export default {
 
 .stat-card h3 {
   font-size: 2rem;
+  color: #333;
   margin: 0;
-  color: #2c3e50;
 }
 
 .stat-card p {
-  margin: 0;
   color: #666;
-  font-size: 0.9rem;
+  margin: 0;
 }
 
 .data-table {
   background: white;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  overflow-x: auto;
 }
 
 table {
@@ -1014,39 +1232,29 @@ table {
 }
 
 thead {
-  background: #f8f9fa;
+  background: #016B61;
+  color: white;
 }
 
 th {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #2c3e50;
-  border-bottom: 2px solid #e0e0e0;
+  white-space: nowrap;
 }
 
 td {
   padding: 1rem;
-  border-bottom: 1px solid #f0f0f0;
-  color: #666;
+  border-bottom: 1px solid #eee;
 }
 
 tbody tr:hover {
-  background: rgba(1, 107, 97, 0.05);
+  background: #f8f9fa;
 }
 
 .book-title, .author-name, .publisher-name {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.website-link {
+  font-weight: 600;
   color: #016B61;
-  transition: color 0.3s ease;
-}
-
-.website-link:hover {
-  color: #015550;
 }
 
 .actions {
@@ -1055,11 +1263,16 @@ tbody tr:hover {
 }
 
 .edit-btn, .delete-btn {
-  padding: 0.5rem 0.8rem;
+  padding: 0.5rem;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .edit-btn {
@@ -1067,8 +1280,9 @@ tbody tr:hover {
   color: white;
 }
 
-.edit-btn:hover {
+.edit-btn:hover:not(:disabled) {
   background: #2980b9;
+  transform: scale(1.1);
 }
 
 .delete-btn {
@@ -1076,80 +1290,62 @@ tbody tr:hover {
   color: white;
 }
 
-.delete-btn:hover {
+.delete-btn:hover:not(:disabled) {
   background: #c0392b;
+  transform: scale(1.1);
 }
 
-.error-message,
-.success-message {
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+.edit-btn:disabled, .delete-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.success-message {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.error-message i,
-.success-message i {
-  font-size: 1.3rem;
-}
-
-.error-message p,
-.success-message p {
-  margin: 0;
-}
-
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.3s;
 }
 
 .modal-content {
   background: white;
   border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
   width: 90%;
-  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
-  padding: 1.5rem 2rem;
-  border-bottom: 2px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8f9fa;
+  margin-bottom: 1.5rem;
 }
 
 .modal-header h3 {
+  color: #016B61;
   margin: 0;
-  color: #2c3e50;
-  font-size: 1.5rem;
 }
 
 .close-modal {
@@ -1158,35 +1354,42 @@ tbody tr:hover {
   font-size: 1.5rem;
   cursor: pointer;
   color: #666;
-  transition: color 0.3s ease;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s;
 }
 
 .close-modal:hover {
-  color: #e74c3c;
+  background: #f8f9fa;
+  color: #333;
 }
 
 .modal-form {
-  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  margin-bottom: 0.5rem;
-  color: #2c3e50;
-  font-weight: 500;
-  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
 }
 
 .form-group input,
@@ -1194,10 +1397,10 @@ tbody tr:hover {
 .form-group textarea {
   padding: 0.8rem;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 1rem;
   font-family: inherit;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s;
 }
 
 .form-group input:focus,
@@ -1205,110 +1408,90 @@ tbody tr:hover {
 .form-group textarea:focus {
   outline: none;
   border-color: #016B61;
-  box-shadow: 0 0 0 3px rgba(1, 107, 97, 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
 }
 
 .modal-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 2px solid #f0f0f0;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
-.save-btn {
-  flex: 1;
-  padding: 0.9rem;
-  background: #016B61;
-  color: white;
+.save-btn, .cancel-btn {
+  padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.save-btn {
+  background: #016B61;
+  color: white;
 }
 
 .save-btn:hover {
   background: #015550;
+  transform: translateY(-2px);
 }
 
 .cancel-btn {
-  flex: 1;
-  padding: 0.9rem;
-  background: #6c757d;
+  background: #e74c3c;
   color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
 }
 
 .cancel-btn:hover {
-  background: #5a6268;
+  background: #c0392b;
+  transform: translateY(-2px);
 }
 
-/* Access Denied */
 .access-denied {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  background: linear-gradient(135deg, #016B61, #015550);
+  color: white;
   text-align: center;
-  background: #f8f9fa;
+  padding: 2rem;
 }
 
 .access-denied i {
   font-size: 5rem;
-  color: #e74c3c;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .access-denied h2 {
   font-size: 2.5rem;
-  color: #2c3e50;
   margin-bottom: 1rem;
 }
 
 .access-denied p {
   font-size: 1.2rem;
-  color: #666;
   margin-bottom: 2rem;
 }
 
 .home-btn {
   padding: 1rem 2rem;
-  background: #016B61;
-  color: white;
+  background: white;
+  color: #016B61;
   text-decoration: none;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  transition: all 0.3s;
 }
 
 .home-btn:hover {
-  background: #015550;
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@media (max-width: 968px) {
+@media (max-width: 768px) {
   .admin-container {
     flex-direction: column;
   }
@@ -1317,9 +1500,21 @@ tbody tr:hover {
     width: 100%;
   }
 
-  .sidebar-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .header-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .search-bar {
+    max-width: 100%;
+  }
+
+  .data-table {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 800px;
   }
 }
 </style>

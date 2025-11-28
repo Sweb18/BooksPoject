@@ -1,4 +1,6 @@
 -- Drop existing tables if they exist
+-- Créer et sélectionner la base de données
+
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS book_genres;
 DROP TABLE IF EXISTS books;
@@ -7,9 +9,12 @@ DROP TABLE IF EXISTS publishers;
 DROP TABLE IF EXISTS genres;
 DROP TABLE IF EXISTS users;
 
+
+
 -- ==============================================
 -- Create Tables
 -- ==============================================
+
 
 -- Authors Table
 CREATE TABLE authors (
