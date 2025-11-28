@@ -1,5 +1,5 @@
 <script>
-import usersData from '../data/users.json';
+const API_URL = 'http://localhost:3000/api';
 
 export default {
   data() {
@@ -9,7 +9,7 @@ export default {
       basket: require('../assets/img/icons/basket.png'),
       searchQuery: '',
       isLoginMode: true,
-      users: this.loadUsers(),
+      users: [],
       loginForm: {
         email: '',
         password: ''
@@ -58,7 +58,10 @@ export default {
       return this.currentUser && this.currentUser.role === 'ADMIN';
     }
   },
-  mounted() {
+  async mounted() {
+    // Charger les utilisateurs depuis l'API
+    await this.loadUsers();
+
     // Charger l'utilisateur connecté depuis localStorage
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
@@ -67,36 +70,52 @@ export default {
     }
   },
   methods: {
-    loadUsers() {
-      // Charger les utilisateurs depuis localStorage ou depuis le JSON
-      const savedUsers = localStorage.getItem('users');
-      if (savedUsers) {
-        return JSON.parse(savedUsers);
+    async loadUsers() {
+      try {
+        const response = await fetch(`${API_URL}/users`);
+        if (!response.ok) {
+          throw new Error('Failed to load users from API');
+        }
+        const usersData = await response.json();
+
+        // Enrichir les utilisateurs avec des données supplémentaires
+        this.users = usersData.map(user => ({
+          ...user,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          phone: user.phone || '',
+          shippingAddress: user.shippingAddress || {
+            street: '',
+            city: '',
+            postalCode: '',
+            country: ''
+          },
+          billingAddress: user.billingAddress || {
+            street: '',
+            city: '',
+            postalCode: '',
+            country: ''
+          },
+          joinDate: user.joinDate || new Date().toISOString(),
+          orders: user.orders || []
+        }));
+      } catch (error) {
+        console.error('Error loading users from API:', error);
+        // Fallback vers localStorage en cas d'erreur
+        const savedUsers = localStorage.getItem('users');
+        if (savedUsers) {
+          this.users = JSON.parse(savedUsers);
+        } else {
+          this.users = [];
+        }
       }
-      // Enrichir les utilisateurs avec des données supplémentaires
-      return usersData.map(user => ({
-        ...user,
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phone: user.phone || '',
-        shippingAddress: user.shippingAddress || {
-          street: '',
-          city: '',
-          postalCode: '',
-          country: ''
-        },
-        billingAddress: user.billingAddress || {
-          street: '',
-          city: '',
-          postalCode: '',
-          country: ''
-        },
-        joinDate: user.joinDate || new Date().toISOString(),
-        orders: user.orders || []
-      }));
     },
-    saveUsers() {
+    async saveUsers() {
+      // Sauvegarder dans localStorage et sur le serveur
       localStorage.setItem('users', JSON.stringify(this.users));
+
+      // TODO: Implémenter la sauvegarde vers l'API si nécessaire
+      // Pour l'instant, on utilise localStorage comme backup
     },
     toggleMode() {
       this.isLoginMode = !this.isLoginMode;
@@ -321,6 +340,13 @@ export default {
               <img class="basket-logo" :src="basket" alt="Shopping Basket" />
             </div>
             <span class="basket-text">Basket</span>
+          </div>
+          <div class="profile">
+            <router-link to="/profile">
+              <img class="profile-logo" src="../assets/img/icons/profile.png" alt="User Profile" />
+              <p>My Profile</p>
+            </router-link>
+
           </div>
         </div>
       </div>
@@ -1724,5 +1750,49 @@ export default {
   .cancel-button {
     width: 100%;
   }
+}
+
+.profile-logo{
+  width: 42px;
+  height: 42px;
+}
+
+.profile {
+
+  margin: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+
+.nav {
+  background: white;
+  padding: 1rem 5rem;
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.nav-link {
+  color: #2c3e50;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: color 0.3s ease;
+  border : none;
+  background : none;
+
+}
+
+
+.nav-link:hover {
+  color: #016B61;
+}
+
+.nav-link:hover:after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
 }
 </style>
