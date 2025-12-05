@@ -125,7 +125,52 @@ router.get('/me', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(users[0]);
+    const user = users[0];
+
+    console.log('👤 User from DB:', user.username);
+    console.log('📦 Address field:', user.address);
+
+    // Parser le champ address s'il existe
+    let shippingAddress = null;
+    let billingAddress = null;
+
+    if (user.address) {
+      try {
+        const addresses = JSON.parse(user.address);
+        shippingAddress = addresses.shipping || null;
+        billingAddress = addresses.billing || null;
+        console.log('✅ Addresses parsed successfully');
+        console.log('  📍 Shipping:', shippingAddress);
+        console.log('  📍 Billing:', billingAddress);
+      } catch (e) {
+        console.error('❌ Error parsing address JSON:', e);
+      }
+    } else {
+      console.log('⚠️  No address field');
+    }
+
+    const responseData = {
+      user_id: user.user_id,
+      userId: user.user_id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      first_name: user.first_name,
+      firstName: user.first_name,
+      last_name: user.last_name,
+      lastName: user.last_name,
+      phone: user.phone,
+      address: user.address,
+      shippingAddress: shippingAddress,
+      billingAddress: billingAddress
+    };
+
+    console.log('📤 Sending response with addresses:', {
+      hasShipping: !!shippingAddress,
+      hasBilling: !!billingAddress
+    });
+
+    res.json(responseData);
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user' });
@@ -179,7 +224,45 @@ router.put('/profile', requireAuth, async (req, res) => {
       [req.session.userId]
     );
 
-    res.json(users[0]);
+    const user = users[0];
+
+    console.log('💾 Profile updated for:', user.username);
+    console.log('📦 New address field:', user.address);
+
+    // Parser le champ address s'il existe
+    let shippingAddress = null;
+    let billingAddress = null;
+
+    if (user.address) {
+      try {
+        const addresses = JSON.parse(user.address);
+        shippingAddress = addresses.shipping || null;
+        billingAddress = addresses.billing || null;
+        console.log('✅ Addresses parsed after update');
+        console.log('  📍 Shipping:', shippingAddress);
+        console.log('  📍 Billing:', billingAddress);
+      } catch (e) {
+        console.error('❌ Error parsing address JSON:', e);
+      }
+    }
+
+    const responseData = {
+      user_id: user.user_id,
+      userId: user.user_id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      first_name: user.first_name,
+      firstName: user.first_name,
+      last_name: user.last_name,
+      lastName: user.last_name,
+      phone: user.phone,
+      address: user.address,
+      shippingAddress: shippingAddress,
+      billingAddress: billingAddress
+    };
+
+    res.json(responseData);
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ error: 'Failed to update profile' });

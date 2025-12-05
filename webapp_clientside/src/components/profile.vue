@@ -81,13 +81,46 @@ export default {
       }
 
       const userData = await response.json();
+
+
+      // Normaliser les noms de champs (snake_case vers camelCase)
+      userData.userId = userData.user_id || userData.userId;
+      userData.firstName = userData.first_name || userData.firstName;
+      userData.lastName = userData.last_name || userData.lastName;
+
+      // Initialiser les adresses si elles n'existent pas ou sont null
+      if (!userData.shippingAddress) {
+        userData.shippingAddress = { street: '', city: '', postalCode: '', country: '' };
+      }
+      if (!userData.billingAddress) {
+        userData.billingAddress = { street: '', city: '', postalCode: '', country: '' };
+      }
+
+      console.log('✅ Adresse shipping finale:', userData.shippingAddress);
+      console.log('✅ Adresse billing finale:', userData.billingAddress);
+
       this.currentUser = userData;
       localStorage.setItem('currentUser', JSON.stringify(userData));
       this.loadEditForm();
     } catch (error) {
       console.error('Error verifying session:', error);
       // En cas d'erreur, utiliser les données locales
-      this.currentUser = JSON.parse(savedUser);
+      const user = JSON.parse(savedUser);
+
+      // Normaliser les noms de champs
+      user.userId = user.user_id || user.userId;
+      user.firstName = user.first_name || user.firstName;
+      user.lastName = user.last_name || user.lastName;
+
+      // Initialiser les adresses si elles n'existent pas
+      if (!user.shippingAddress) {
+        user.shippingAddress = { street: '', city: '', postalCode: '', country: '' };
+      }
+      if (!user.billingAddress) {
+        user.billingAddress = { street: '', city: '', postalCode: '', country: '' };
+      }
+
+      this.currentUser = user;
       this.loadEditForm();
     }
 
@@ -138,9 +171,6 @@ export default {
     async saveUsers() {
       // Sauvegarder dans localStorage et sur le serveur
       localStorage.setItem('users', JSON.stringify(this.users));
-
-      // TODO: Implémenter la sauvegarde vers l'API si nécessaire
-      // Pour l'instant, on utilise localStorage comme backup
     },
     toggleMode() {
       this.isLoginMode = !this.isLoginMode;
@@ -335,19 +365,32 @@ export default {
 
         const updatedUser = await response.json();
 
-        // Enrichir avec les données d'adresse
-        updatedUser.firstName = updatedUser.first_name;
-        updatedUser.lastName = updatedUser.last_name;
-        if (updatedUser.address) {
-          try {
-            const addresses = JSON.parse(updatedUser.address);
-            updatedUser.shippingAddress = addresses.shipping || this.editForm.shippingAddress;
-            updatedUser.billingAddress = addresses.billing || this.editForm.billingAddress;
-          } catch (e) {
-            updatedUser.shippingAddress = this.editForm.shippingAddress;
-            updatedUser.billingAddress = this.editForm.billingAddress;
-          }
+        console.log('💾 Réponse après sauvegarde:', updatedUser);
+        console.log('📍 shippingAddress reçu:', updatedUser.shippingAddress);
+        console.log('📍 billingAddress reçu:', updatedUser.billingAddress);
+
+        // Normaliser les noms de champs (snake_case vers camelCase)
+        updatedUser.userId = updatedUser.user_id || updatedUser.userId;
+        updatedUser.firstName = updatedUser.first_name || updatedUser.firstName;
+        updatedUser.lastName = updatedUser.last_name || updatedUser.lastName;
+
+        // Les adresses sont déjà parsées par le backend, ne PAS réinitialiser
+        // Si le backend renvoie null, garder les valeurs du formulaire
+        if (!updatedUser.shippingAddress && this.editForm.shippingAddress.street) {
+          updatedUser.shippingAddress = this.editForm.shippingAddress;
+        } else if (!updatedUser.shippingAddress) {
+          updatedUser.shippingAddress = { street: '', city: '', postalCode: '', country: '' };
         }
+
+        if (!updatedUser.billingAddress && this.editForm.billingAddress.street) {
+          updatedUser.billingAddress = this.editForm.billingAddress;
+        } else if (!updatedUser.billingAddress) {
+          updatedUser.billingAddress = { street: '', city: '', postalCode: '', country: '' };
+        }
+
+        console.log('✅ currentUser après traitement:', updatedUser);
+        console.log('✅ shippingAddress final:', updatedUser.shippingAddress);
+        console.log('✅ billingAddress final:', updatedUser.billingAddress);
 
         this.currentUser = updatedUser;
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
