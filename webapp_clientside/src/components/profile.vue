@@ -59,15 +59,40 @@ export default {
     }
   },
   async mounted() {
-    // Charger les utilisateurs depuis l'API
-    await this.loadUsers();
-
-    // Charger l'utilisateur connecté depuis localStorage
+    // Vérifier l'authentification via l'API
     const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
+    if (!savedUser) {
+      // Pas connecté, rediriger vers login
+      this.$router.push('/login');
+      return;
+    }
+
+    try {
+      // Vérifier que la session est toujours valide
+      const response = await fetch(`${API_URL}/auth/me`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        // Session expirée, rediriger vers login
+        localStorage.removeItem('currentUser');
+        this.$router.push('/login');
+        return;
+      }
+
+      const userData = await response.json();
+      this.currentUser = userData;
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      this.loadEditForm();
+    } catch (error) {
+      console.error('Error verifying session:', error);
+      // En cas d'erreur, utiliser les données locales
       this.currentUser = JSON.parse(savedUser);
       this.loadEditForm();
     }
+
+    // Charger les utilisateurs (pour l'admin)
+    await this.loadUsers();
   },
   methods: {
     async loadUsers() {
@@ -233,15 +258,21 @@ export default {
         this.successMessage = 'You can now log in';
       }, 2000);
     },
-    handleLogout() {
+    async handleLogout() {
+      try {
+        // Appeler l'API de déconnexion
+        await fetch(`${API_URL}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+
+      // Nettoyer le localStorage et rediriger
       this.currentUser = null;
       localStorage.removeItem('currentUser');
-      this.isEditing = false;
-      this.activeTab = 'account';
-      this.successMessage = 'Logged out successfully';
-      setTimeout(() => {
-        this.successMessage = '';
-      }, 2000);
+      this.$router.push('/login');
     },
     loadEditForm() {
       if (this.currentUser) {
@@ -265,7 +296,7 @@ export default {
       this.loadEditForm();
       this.errorMessage = '';
     },
-    saveProfile() {
+    async saveProfile() {
       this.errorMessage = '';
       this.successMessage = '';
 
@@ -275,38 +306,59 @@ export default {
         return;
       }
 
-      // Vérifier si l'email est déjà utilisé par un autre utilisateur
-      const emailExists = this.users.find(u =>
-        u.email === this.editForm.email && u.user_id !== this.currentUser.user_id
-      );
-      if (emailExists) {
-        this.errorMessage = 'Email already used by another account';
-        return;
-      }
-
-      // Mettre à jour l'utilisateur
-      const userIndex = this.users.findIndex(u => u.user_id === this.currentUser.user_id);
-      if (userIndex !== -1) {
-        this.users[userIndex] = {
-          ...this.users[userIndex],
+      try {
+        // Préparer les données à envoyer
+        const updateData = {
           username: this.editForm.username,
           email: this.editForm.email,
           firstName: this.editForm.firstName,
           lastName: this.editForm.lastName,
           phone: this.editForm.phone,
-          shippingAddress: { ...this.editForm.shippingAddress },
-          billingAddress: { ...this.editForm.billingAddress }
+          address: JSON.stringify({
+            shipping: this.editForm.shippingAddress,
+            billing: this.editForm.billingAddress
+          })
         };
 
-        this.currentUser = this.users[userIndex];
-        this.saveUsers();
-        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        // Appeler l'API de mise à jour
+        const response = await fetch(`${API_URL}/auth/profile`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(updateData)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update profile');
+        }
+
+        const updatedUser = await response.json();
+
+        // Enrichir avec les données d'adresse
+        updatedUser.firstName = updatedUser.first_name;
+        updatedUser.lastName = updatedUser.last_name;
+        if (updatedUser.address) {
+          try {
+            const addresses = JSON.parse(updatedUser.address);
+            updatedUser.shippingAddress = addresses.shipping || this.editForm.shippingAddress;
+            updatedUser.billingAddress = addresses.billing || this.editForm.billingAddress;
+          } catch (e) {
+            updatedUser.shippingAddress = this.editForm.shippingAddress;
+            updatedUser.billingAddress = this.editForm.billingAddress;
+          }
+        }
+
+        this.currentUser = updatedUser;
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
         this.isEditing = false;
         this.successMessage = 'Profile updated successfully!';
         setTimeout(() => {
           this.successMessage = '';
         }, 3000);
+      } catch (error) {
+        this.errorMessage = error.message;
       }
     },
     copyShippingToBilling() {

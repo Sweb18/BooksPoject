@@ -43,16 +43,38 @@ export default {
     }
   },
   async mounted() {
+    // Vérifier l'authentification via l'API
     const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      this.currentUser = JSON.parse(savedUser);
-      if (!this.isAdmin) {
-        this.$router.push('/');
-      } else {
-        await this.loadAllData();
+    if (!savedUser) {
+      this.$router.push('/login');
+      return;
+    }
+
+    try {
+      // Vérifier que la session est toujours valide et que l'utilisateur est ADMIN
+      const response = await fetch(`${API_URL}/auth/me`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        localStorage.removeItem('currentUser');
+        this.$router.push('/login');
+        return;
       }
-    } else {
-      this.$router.push('/profile');
+
+      const userData = await response.json();
+
+      if (userData.role !== 'ADMIN') {
+        this.$router.push('/');
+        return;
+      }
+
+      this.currentUser = userData;
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      await this.loadAllData();
+    } catch (error) {
+      console.error('Error verifying session:', error);
+      this.$router.push('/login');
     }
   },
   methods: {

@@ -3,6 +3,7 @@ import Libraryhome from '../components/libraryhome.vue'
 import Contact from '../components/contact.vue'
 import Profile from '../components/profile.vue'
 import Admin from '../components/admin.vue'
+import Login from '../components/Login.vue'
 
 const routes = [
   {
@@ -14,6 +15,11 @@ const routes = [
     path: '/contact',
     name: 'contact',
     component: Contact
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: Login
   },
   {
     path: '/profile',

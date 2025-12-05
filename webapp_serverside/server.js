@@ -43,8 +43,17 @@ app.use(cors({
 // auth.initializeAuthentications(app); 
 // app.use("/auth", require("./controllers/auth.route"));
 
+// setup database connection
+const db = require('./utils/db.include');
+app.locals.db = db;
+
 // setup additional routes
 app.use("/static", express.static(__dirname + '/static'));
+
+// Routes d'authentification
+const { router: authRouter } = require('./routes/auth');
+app.use("/api/auth", authRouter);
+
 app.use("/api", require("./controllers/library.route"));
 
 // setup default route = 'GET' as a HTTP VERB, not as a 'getter' of some data!

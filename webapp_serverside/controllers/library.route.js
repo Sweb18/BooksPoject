@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../utils/db.include');
+const { requireAuth, requireAdmin } = require('../routes/auth');
 
 // ==================== BOOKS ROUTES ====================
 
@@ -66,7 +67,7 @@ router.get('/books/:id', async (req, res) => {
 });
 
 // Add new book
-router.post('/books', async (req, res) => {
+router.post('/books', requireAdmin, async (req, res) => {
     try {
         const { title, subtitle, isbn13, author_id, publisher_id, publication_date, language, page_count, description } = req.body;
 
@@ -83,7 +84,7 @@ router.post('/books', async (req, res) => {
 });
 
 // Update book
-router.put('/books/:id', async (req, res) => {
+router.put('/books/:id', requireAdmin, async (req, res) => {
     try {
         const { title, subtitle, isbn13, author_id, publisher_id, publication_date, language, page_count, description } = req.body;
 
@@ -117,7 +118,7 @@ router.put('/books/:id', async (req, res) => {
 });
 
 // Delete book
-router.delete('/books/:id', async (req, res) => {
+router.delete('/books/:id', requireAdmin, async (req, res) => {
     try {
         await db.query('DELETE FROM books WHERE book_id = ?', [req.params.id]);
         res.json({ message: 'Book deleted successfully' });
@@ -141,7 +142,7 @@ router.get('/authors', async (req, res) => {
 });
 
 // Add new author
-router.post('/authors', async (req, res) => {
+router.post('/authors', requireAdmin, async (req, res) => {
     try {
         const { first_name, last_name, bio, birth_date, death_date, nationality, website, portrait_url } = req.body;
 
@@ -158,7 +159,7 @@ router.post('/authors', async (req, res) => {
 });
 
 // Update author
-router.put('/authors/:id', async (req, res) => {
+router.put('/authors/:id', requireAdmin, async (req, res) => {
     try {
         const { first_name, last_name, bio, birth_date, death_date, nationality, website, portrait_url } = req.body;
 
@@ -176,7 +177,7 @@ router.put('/authors/:id', async (req, res) => {
 });
 
 // Delete author
-router.delete('/authors/:id', async (req, res) => {
+router.delete('/authors/:id', requireAdmin, async (req, res) => {
     try {
         await db.query('DELETE FROM authors WHERE author_id = ?', [req.params.id]);
         res.json({ message: 'Author deleted successfully' });
@@ -200,7 +201,7 @@ router.get('/publishers', async (req, res) => {
 });
 
 // Add new publisher
-router.post('/publishers', async (req, res) => {
+router.post('/publishers', requireAdmin, async (req, res) => {
     try {
         const { name, country, founded_year, headquarters_city, website, contact_email, phone } = req.body;
 
@@ -217,7 +218,7 @@ router.post('/publishers', async (req, res) => {
 });
 
 // Update publisher
-router.put('/publishers/:id', async (req, res) => {
+router.put('/publishers/:id', requireAdmin, async (req, res) => {
     try {
         const { name, country, founded_year, headquarters_city, website, contact_email, phone } = req.body;
 
@@ -235,7 +236,7 @@ router.put('/publishers/:id', async (req, res) => {
 });
 
 // Delete publisher
-router.delete('/publishers/:id', async (req, res) => {
+router.delete('/publishers/:id', requireAdmin, async (req, res) => {
     try {
         await db.query('DELETE FROM publishers WHERE publisher_id = ?', [req.params.id]);
         res.json({ message: 'Publisher deleted successfully' });
@@ -291,7 +292,7 @@ router.get('/book-genres', async (req, res) => {
 
 // ==================== USER ROUTES ====================
 
-// Get all users (pour l'admin)
+// Get all users (pour l'admin) - protected route
 router.get('/users', async (req, res) => {
     try {
         const [users] = await db.query('SELECT user_id, username, email, role, created_at FROM users');
@@ -302,73 +303,8 @@ router.get('/users', async (req, res) => {
     }
 });
 
-// User login
-router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-
-        if (users.length === 0) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const user = users[0];
-
-        if (user.password_hash === password) {
-            req.session.user = {
-                user_id: user.user_id,
-                username: user.username,
-                email: user.email,
-                role: user.role
-            };
-            res.json({ message: 'Login successful', user: req.session.user });
-        } else {
-            res.status(401).json({ error: 'Invalid credentials' });
-        }
-    } catch (error) {
-        console.error('Error logging in:', error);
-        res.status(500).json({ error: 'Error logging in' });
-    }
-});
-
-// User register
-router.post('/register', async (req, res) => {
-    try {
-        const { username, email, password } = req.body;
-
-        const [existing] = await db.query('SELECT * FROM users WHERE email = ? OR username = ?', [email, username]);
-
-        if (existing.length > 0) {
-            return res.status(400).json({ error: 'User already exists' });
-        }
-
-        const [result] = await db.query(`
-            INSERT INTO users (username, email, password_hash, role)
-            VALUES (?, ?, ?, 'USER')
-        `, [username, email, password]);
-
-        res.json({ message: 'Registration successful', user_id: result.insertId });
-    } catch (error) {
-        console.error('Error registering user:', error);
-        res.status(500).json({ error: 'Error registering user' });
-    }
-});
-
-// User logout
-router.post('/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ message: 'Logout successful' });
-});
-
-// Get current user session
-router.get('/session', (req, res) => {
-    if (req.session.user) {
-        res.json({ user: req.session.user });
-    } else {
-        res.status(401).json({ error: 'Not authenticated' });
-    }
-});
+// Note: Auth routes (login, register, logout) are now in /api/auth (routes/auth.js)
+// This uses bcrypt for password hashing and proper session management
 
 module.exports = router;
 

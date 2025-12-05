@@ -70,7 +70,13 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) DEFAULT 'USER'
+    role ENUM('USER', 'ADMIN') DEFAULT 'USER',
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone VARCHAR(50),
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL
 );
 
 -- Book_Genres Table (Many-to-Many relationship)
@@ -148,10 +154,13 @@ INSERT INTO books (book_id, title, author, subtitle, isbn13, author_id, publishe
 (10, 'The Shining', 'Stephen King', NULL, '9780307743657', 10, 6, '1977-01-28', 'en', 447, 'Horror novel by Stephen King.');
 
 -- Insert Users
+-- password for admin: admin123
+-- password for  user2: password123
+-- password for  user3: password123
 INSERT INTO users (user_id, username, email, password_hash, role) VALUES
-(1, 'admin', 'admin@gmail.com', 'hash1', 'ADMIN'),
-(2, 'user2', 'user2@example.com', 'hash2', 'USER'),
-(3, 'user3', 'user3@example.com', 'hash3', 'USER');
+(1, 'admin', 'admin@gmail.com', '$2b$10$nMaF4tE3dAq1MhMg6zJGOeWFCSd3fVfgsdSED1Tp3MQG5pkO1eaMy', 'ADMIN'),
+(2, 'user2', 'user2@example.com', '$2b$10$nMaF4tE3dAq1MhMg6zJGOeWFCSd3fVfgsdSED1Tp3MQG5pkO1eaMy', 'USER'),
+(3, 'user3', 'user3@example.com', '$2b$10$nMaF4tE3dAq1MhMg6zJGOeWFCSd3fVfgsdSED1Tp3MQG5pkO1eaMy', 'USER');
 
 -- Insert Book_Genres (Many-to-Many relationships)
 INSERT INTO book_genres (book_id, genre_id) VALUES
