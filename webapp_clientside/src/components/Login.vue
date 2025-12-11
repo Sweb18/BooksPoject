@@ -124,7 +124,7 @@ export default {
       this.successMessage = '';
 
       if (!this.isLoginMode) {
-        // Validation pour l'inscription
+        // password confirmation check for registration
         if (this.registerForm.password !== this.registerForm.confirmPassword) {
           this.errorMessage = 'Passwords do not match';
           return;
@@ -132,6 +132,7 @@ export default {
       }
 
       try {
+        // determine endpoint and body for the request
         const endpoint = this.isLoginMode ? '/auth/login' : '/auth/register';
         const body = this.isLoginMode ? this.loginForm : {
           username: this.registerForm.username,
@@ -153,17 +154,17 @@ export default {
         }
 
         if (this.isLoginMode) {
-          // Connexion réussie
+          // connexion with success
           localStorage.setItem('currentUser', JSON.stringify(data));
 
-          // Rediriger selon le rôle
+          // redirect based on role
           if (data.role === 'ADMIN') {
             this.$router.push('/admin');
           } else {
             this.$router.push('/profile');
           }
         } else {
-          // Inscription réussie
+          // insciption with success
           this.successMessage = 'Account created successfully! Please login.';
           setTimeout(() => {
             this.isLoginMode = true;
@@ -177,7 +178,7 @@ export default {
     }
   },
   mounted() {
-    // Vérifier si déjà connecté
+    // verify if the user is already logged in
     const currentUser = localStorage.getItem('currentUser');
     if (currentUser) {
       const user = JSON.parse(currentUser);

@@ -10,7 +10,7 @@
           <button class="search-button"><i class="fas fa-search"></i></button>
         </div>
 
-
+        <!-- Header Links -->
         <div class="header-links">
           <div class="search-shop">
             <img class="shop-logo" :src="shop" alt="Shop Location" />
@@ -20,6 +20,8 @@
             <img class="save-logo" src="../assets/img/icons/save.png" alt="Save for later" />
             <p>Save for later</p>
           </div>
+
+          <!-- Toggle basket visibility -->
           <div
             class="basket"
             @click="showBasket = !showBasket;"
@@ -27,6 +29,7 @@
             role="button"
             data-test="basket-button"
             aria-label="Open shopping basket">
+
             <div class="basket-icon-wrapper">
               <img class="basket-logo" :src="basket" alt="Shopping Basket" />
               <span v-if="cartItemCount > 0" class="basket-count">{{ cartItemCount }}</span>
@@ -46,6 +49,7 @@
 
     </header>
 
+    <!-- Navigation Bar -->
     <nav class="nav">
       <router-link to="/" class="nav-link">Home</router-link>
       <router-link to="/new" class="nav-link">New Releases</router-link>
@@ -59,6 +63,7 @@
       <router-link to="/contact" class="nav-link">Contact</router-link>
     </nav>
 
+    <!-- Hero Section -->
     <section class="hero">
       <div class="hero-content">
         <h2>Discover our Selection</h2>
@@ -69,7 +74,7 @@
         </div>
       </div>
     </section>
-
+    <!-- Featured Services Section -->
     <section class="featured">
       <div class="container">
         <div class="featured-grid">
@@ -96,7 +101,7 @@
         </div>
       </div>
     </section>
-
+    <!-- New Releases Section -->
     <section class="new-releases container">
       <h2 class="section-title">Discover New Releases</h2>
       <div class="books-grid">
@@ -108,13 +113,13 @@
             </div>
           </div>
           <div class="book-info">
-            <h3>{{ book.title }}</h3>
-            <p class="author">{{ book.author }}</p>
+            <h3>{{ book.title }}</h3> <!-- Name of the book -->
+            <p class="author">{{ book.author }}</p> <!-- Author of the book -->
             <div class="book-details">
-              <div class="price">{{ book.price }}</div>
+              <div class="price">{{ book.price }}</div> <!-- Price of the book -->
               <div class="rating">
                 <i class="fas fa-star"></i>
-                <span>{{ book.rating }}</span>
+                <span>{{ book.rating }}</span> <!-- Average rating -->
               </div>
             </div>
             <button class="add-to-cart" @click="addToCartFromMainPage(book)"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
@@ -127,9 +132,9 @@
       <h2 class="section-title">Browse our Sections</h2>
       <div class="categories-grid">
         <div v-for="category in featuredCategories" :key="category.name" class="category-card">
-          <div class="category-image" :style="{ backgroundImage: `url('${category.image}')` }"></div>
+          <div class="category-image" :style="{ backgroundImage: `url('${category.image}')` }"></div> <!-- Category image -->
           <div class="category-content">
-            <h3>{{ category.name }}</h3>
+            <h3>{{ category.name }}</h3> <!-- Category name -->
           </div>
         </div>
       </div>
@@ -137,8 +142,8 @@
 
     <!-- Modal pour les détails du livre -->
     <div class="modal-wrapper" :class="{ active: showWindow }">
-      <div class="window-overlay" @click="closeWindow"></div>
-      <div class="window" @click.stop>
+      <div class="window-overlay" @click="closeWindow"></div> <!-- Overlay to close the window -->
+      <div class="window" @click.stop> <!-- Prevent closing when clicking inside the window -->
         <div v-if="selectedBook" class="window-content">
         <button class="close-window" @click="closeWindow">
           <i class="fas fa-times"></i>
@@ -149,12 +154,12 @@
         </div>
 
         <div class="window-body">
-          <h2 class="window-title">{{ selectedBook.title }}</h2>
-          <p class="window-author">by {{ selectedBook.authorName }}</p>
+          <h2 class="window-title">{{ selectedBook.title }}</h2> <!-- Book Title -->
+          <p class="window-author">by {{ selectedBook.authorName }}</p> <!-- Author Name -->
 
           <div class="window-rating">
             <div class="stars">
-              <i v-for="n in 5" :key="n" class="fas fa-star" :class="{ filled: n <= Math.round(selectedBook.avgRating) }"></i>
+              <i v-for="n in 5" :key="n" class="fas fa-star" :class="{ filled: n <= Math.round(selectedBook.avgRating) }"></i> <!-- Filled stars based on average rating -->
             </div>
             <span class="rating-value">{{ selectedBook.avgRating }}/5</span>
           </div>
@@ -173,10 +178,10 @@
             <p>{{ selectedBook.description || 'No description available.' }}</p>
           </div>
 
-          <div class="window-section" v-if="selectedBook.genres && selectedBook.genres.length > 0">
+          <div class="window-section" v-if="selectedBook.genres && selectedBook.genres.length > 0"> <!-- Genres Section -->
             <h3>Genres</h3>
             <div class="genre-tags">
-              <span v-for="genre in selectedBook.genres" :key="genre" class="genre-tag">{{ genre }}</span>
+              <span v-for="genre in selectedBook.genres" :key="genre" class="genre-tag">{{ genre }}</span> <!-- Genre Tag -->
             </div>
           </div>
 
@@ -349,7 +354,7 @@ const bookCovers = {
   '9782070409189': lesMiserablesCover,
   // Pride and Prejudice
   '9780141439518': 'https://m.media-amazon.com/images/I/71Q1tPupKjL._SY522_.jpg',
-  // Fallback image pour les livres sans couverture spécifique
+  // Fallback for default books without specific images
   'default': 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80'
 };
 
@@ -381,11 +386,11 @@ export default {
       bookGenres: []
     };
   },
-  async mounted() {
+  async mounted() { // Fetch data when component is mounted
     await this.fetchData();
   },
   computed: {
-    formattedBooks() {
+    formattedBooks() { // Format books with author names, prices, and ratings
       return this.books.map(book => {
         const author = this.authors.find(a => a.author_id === book.author_id);
         const authorName = author ? `${author.first_name} ${author.last_name}` : book.author;
@@ -411,9 +416,11 @@ export default {
       });
     },
     featuredCategories() {
+      // Get genres with book counts and images
       return this.genres.map(genre => {
-        // Compter le nombre de livres pour ce genre
+        // Count the number of books in this genre
         const bookCount = this.bookGenres.filter(bg => bg.genre_id === genre.genre_id).length;
+
 
         return {
           name: genre.name,
@@ -447,7 +454,10 @@ export default {
       const rating = 3 + (pseudoRandom / 233280) * 2;
       return rating.toFixed(1);
     },
-    openQuickView(bookId) {
+
+    openQuickView(bookId) // Open the quick view modal for a book
+    {
+      // Find the book by ID
       const book = this.books.find(b => b.book_id === bookId);
       if (!book) return;
 
@@ -457,15 +467,17 @@ export default {
       const bookGenreIds = this.bookGenres
         .filter(bg => bg.book_id === book.book_id)
         .map(bg => bg.genre_id);
+      // Get genre names for the book
       const bookGenresList = this.genres
         .filter(g => bookGenreIds.includes(g.genre_id))
         .map(g => g.name);
+      // Get reviews for the book
 
       const bookReviews = this.reviews.filter(r => r.book_id === book.book_id);
 
       const avgRating = bookReviews.length > 0
         ? (bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length).toFixed(1)
-        : this.getBookRating(book.book_id);
+        : this.getBookRating(book.book_id); // Fallback rating
 
       this.selectedBook = {
         ...book,
@@ -477,7 +489,7 @@ export default {
         avgRating: avgRating,
         price: this.getBookPrice(book.book_id),
         img: bookCovers[book.isbn13] || bookCovers.default
-      };
+      }; // Set selected book details
 
       this.showWindow = true;
     },
@@ -506,7 +518,8 @@ export default {
       // Afficher le panier
       this.showBasket = true;
     },
-    addToCartFromMainPage(book) {
+    addToCartFromMainPage(book) // Add book to cart from main page
+    {
       const existingItem = this.cartItems.find(item => item.id === book.id);
 
       if (existingItem) {
@@ -543,7 +556,8 @@ export default {
         }
       }
     },
-    async fetchData() {
+    async fetchData() // Fetch all necessary data from the API
+    {
       try {
         const [booksRes, authorsRes, reviewsRes, publishersRes, genresRes, bookGenresRes] = await Promise.all([
           fetch(`${API_URL}/books`),

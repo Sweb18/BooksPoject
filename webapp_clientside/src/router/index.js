@@ -5,6 +5,8 @@ import Profile from '../components/profile.vue'
 import Admin from '../components/admin.vue'
 import Login from '../components/Login.vue'
 
+//creating routes for different components
+
 const routes = [
   {
     path: '/',

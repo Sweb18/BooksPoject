@@ -31,7 +31,8 @@ export default {
     isAdmin() {
       return this.currentUser && this.currentUser.role === 'ADMIN';
     },
-    filteredBooks() {
+    filteredBooks()
+    {
       if (!this.searchQuery) return this.books;
       const query = this.searchQuery.toLowerCase();
       return this.books.filter(book =>
@@ -51,7 +52,7 @@ export default {
     }
 
     try {
-      // Vérifier que la session est toujours valide et que l'utilisateur est ADMIN
+      // verify that the session is still valid with the API
       const response = await fetch(`${API_URL}/auth/me`, {
         credentials: 'include'
       });
