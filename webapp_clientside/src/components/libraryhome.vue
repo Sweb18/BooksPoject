@@ -103,9 +103,54 @@
     </section>
     <!-- New Releases Section -->
     <section class="new-releases container">
-      <h2 class="section-title">Discover New Releases</h2>
+      <div class="section-header">
+        <h2 class="section-title">Discover New Releases</h2>
+
+        <!-- Filters and Sorting -->
+        <div class="filters-container">
+          <div class="filter-group">
+            <label for="genre-filter">Genre:</label>
+            <select id="genre-filter" v-model="selectedGenre" class="filter-select">
+              <option value="">All Genres</option>
+              <option v-for="genre in genres" :key="genre.genre_id" :value="genre.genre_id">
+                {{ genre.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="author-filter">Author:</label>
+            <select id="author-filter" v-model="selectedAuthor" class="filter-select">
+              <option value="">All Authors</option>
+              <option v-for="author in authors" :key="author.author_id" :value="author.author_id">
+                {{ author.first_name }} {{ author.last_name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="sort-by">Sort By:</label>
+            <select id="sort-by" v-model="sortBy" class="filter-select">
+              <option value="">Default</option>
+              <option value="title-asc">Title (A-Z)</option>
+              <option value="title-desc">Title (Z-A)</option>
+              <option value="date-asc">Publication Date (Oldest)</option>
+              <option value="date-desc">Publication Date (Newest)</option>
+              <option value="rating-desc">Rating (Highest)</option>
+              <option value="rating-asc">Rating (Lowest)</option>
+              <option value="price-asc">Price (Low to High)</option>
+              <option value="price-desc">Price (High to Low)</option>
+            </select>
+          </div>
+
+          <button class="reset-filters" @click="resetFilters">
+            <i class="fas fa-redo"></i> Reset
+          </button>
+        </div>
+      </div>
+
       <div class="books-grid">
-        <div class="book-card" v-for="book in formattedBooks" :key="book.id">
+        <div class="book-card" v-for="book in filteredAndSortedBooks" :key="book.id">
           <div class="book-image">
             <img :src="book.img" :alt="book.title" />
             <div class="book-overlay">
@@ -383,7 +428,11 @@ export default {
       reviews: [],
       publishers: [],
       genres: [],
-      bookGenres: []
+      bookGenres: [],
+      // Filtres et tri
+      selectedGenre: '',
+      selectedAuthor: '',
+      sortBy: ''
     };
   },
   async mounted() { // Fetch data when component is mounted
@@ -408,12 +457,59 @@ export default {
           id: book.book_id,
           title: book.title,
           author: authorName,
+          authorId: book.author_id,
           price: price,
           rating: rating,
           img: bookCovers[book.isbn13] || bookCovers.default,
-          description: book.description
+          description: book.description,
+          publicationDate: book.publication_date,
+          isbn13: book.isbn13
         };
       });
+    },
+    filteredAndSortedBooks() {
+      let filtered = [...this.formattedBooks];
+
+      // Filtrage par genre
+      if (this.selectedGenre) {
+        const bookIdsInGenre = this.bookGenres
+          .filter(bg => bg.genre_id === parseInt(this.selectedGenre))
+          .map(bg => bg.book_id);
+        filtered = filtered.filter(book => bookIdsInGenre.includes(book.id));
+      }
+
+      // Filtrage par auteur
+      if (this.selectedAuthor) {
+        filtered = filtered.filter(book => book.authorId === parseInt(this.selectedAuthor));
+      }
+
+      // Tri
+      if (this.sortBy) {
+        filtered.sort((a, b) => {
+          switch (this.sortBy) {
+            case 'title-asc':
+              return a.title.localeCompare(b.title);
+            case 'title-desc':
+              return b.title.localeCompare(a.title);
+            case 'date-asc':
+              return new Date(a.publicationDate) - new Date(b.publicationDate);
+            case 'date-desc':
+              return new Date(b.publicationDate) - new Date(a.publicationDate);
+            case 'rating-asc':
+              return parseFloat(a.rating) - parseFloat(b.rating);
+            case 'rating-desc':
+              return parseFloat(b.rating) - parseFloat(a.rating);
+            case 'price-asc':
+              return parseFloat(a.price.replace('$', '')) - parseFloat(b.price.replace('$', ''));
+            case 'price-desc':
+              return parseFloat(b.price.replace('$', '')) - parseFloat(a.price.replace('$', ''));
+            default:
+              return 0;
+          }
+        });
+      }
+
+      return filtered;
     },
     featuredCategories() {
       // Get genres with book counts and images
@@ -577,6 +673,11 @@ export default {
       } catch (error) {
         console.error('Error fetching data:', error);
       }
+    },
+    resetFilters() {
+      this.selectedGenre = '';
+      this.selectedAuthor = '';
+      this.sortBy = '';
     }
   }
 };
@@ -844,6 +945,87 @@ export default {
   font-weight: 300;
   letter-spacing: 0.5px;
 }
+
+.section-header {
+  margin-bottom: 3rem;
+}
+
+.filters-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.filter-select {
+  padding: 0.7rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.filter-select:hover {
+  border-color: #016B61;
+}
+
+.filter-select:focus {
+  border-color: #016B61;
+  box-shadow: 0 0 0 3px rgba(1, 107, 97, 0.1);
+}
+
+.reset-filters {
+  padding: 0.7rem 1.5rem;
+  background: #f8f9fa;
+  color: #2c3e50;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  margin-top: auto;
+}
+
+.reset-filters:hover {
+  background: #016B61;
+  color: white;
+  border-color: #016B61;
+}
+
+.reset-filters i {
+  font-size: 0.9rem;
+}
+
 
 .books-grid {
   display: grid;
